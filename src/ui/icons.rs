@@ -680,11 +680,6 @@ pub fn icon_sparkle(ui: &mut Ui, size: f32, color: Color32) {
             center.y + a2.sin() * r * 0.3,
             seed + 10.0 + i as f32,
         );
-        let p_inner2 = wobble(
-            center.x + (a2 + std::f32::consts::TAU / 4.0).cos() * r * 0.3,
-            center.y + (a2 + std::f32::consts::TAU / 4.0).sin() * r * 0.3,
-            seed + 11.0 + i as f32,
-        );
         let next_a = a + std::f32::consts::TAU / 4.0;
         let p_next_outer =
             wobble(center.x + next_a.cos() * r, center.y + next_a.sin() * r, seed + (i + 1) as f32);
