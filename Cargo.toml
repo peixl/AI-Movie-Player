@@ -47,7 +47,7 @@ zip = "2"
 scraper = "0.22"
 
 # Config
-toml = "0.8"
+toml = "1.1"
 directories = "6"
 
 # Error handling
