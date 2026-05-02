@@ -1,0 +1,14 @@
+pub mod add_movie;
+pub mod ai_chat_panel;
+pub mod ai_recommend_panel;
+pub mod animation;
+pub mod batch_ops;
+pub mod icons;
+pub mod layout;
+pub mod movie_detail;
+pub mod poster_wall;
+pub mod settings_panel;
+pub mod subtitle_panel;
+pub mod theme;
+pub mod watchlist_panel;
+pub mod widgets;

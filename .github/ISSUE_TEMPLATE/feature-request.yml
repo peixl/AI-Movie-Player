@@ -1,0 +1,61 @@
+name: Feature Request
+description: Propose a product or engineering improvement / 提交产品或工程改进建议
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Strong feature requests explain the user problem first and the implementation idea second.
+        优秀的功能建议应先说清用户问题，再提出实现方向。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to Solve / 要解决的问题
+      description: What user need is currently underserved? / 当前没有被很好满足的用户需求是什么？
+      placeholder: Describe the real workflow pain, not just the desired button.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution / 建议方案
+      description: What should AI-Movie-Player do differently? / 你希望 AI-Movie-Player 怎么改？
+      placeholder: Explain the feature at the product level first.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area / 影响模块
+      options:
+        - Library / 片库
+        - AI Companion / AI 对话
+        - AI Taste Engine / AI 推荐
+        - Metadata / 元数据
+        - Subtitles / 字幕
+        - Watchlist / 片单
+        - Settings / 设置
+        - Release or Docs / 发布或文档
+        - Other / 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: User Impact / 用户价值
+      description: Why is this worth building? / 为什么值得做？
+      placeholder: Tell us what becomes better, faster, clearer, or more elegant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References or Examples / 参考与示例
+      description: Link similar products, mockups, or relevant issues if helpful. / 如有帮助，请附相似产品、草图或相关 issue。

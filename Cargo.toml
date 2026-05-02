@@ -1,0 +1,67 @@
+[package]
+name = "ai-movie-player"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85"
+description = "AI-native movie player / AI 原生电影播放器: cinematic chat, taste-aware recommendations, smart subtitles, metadata, poster wall — by ifq.ai"
+
+[dependencies]
+# GUI
+eframe = "0.31"
+egui = "0.31"
+egui_extras = { version = "0.31", features = ["all_loaders"] }
+
+# Async
+tokio = { version = "1", features = ["full"] }
+
+# HTTP
+reqwest = { version = "0.12", features = ["json", "gzip", "brotli", "stream"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Database
+rusqlite = { version = "0.34", features = ["bundled", "serde_json"] }
+
+# Image processing
+image = { version = "0.25", features = ["jpeg", "png", "webp"] }
+
+# File operations
+rfd = "0.15"
+walkdir = "2"
+regex = "1"
+
+# Subtitle
+encoding_rs = "0.8"
+zip = "2"
+
+# HTML scraping
+scraper = "0.22"
+
+# Config
+toml = "0.8"
+directories = "6"
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
+
+# Async utilities
+futures-util = "0.3"
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+sha2 = "0.10"
+tempfile = "3"
+url = "2"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/peixl/AI-Movie-Player/discussions
+    about: Use Discussions for broader product conversations, comparisons, and open-ended ideas. / 更开放的产品讨论、对比和探索性想法请走 Discussions。
+  - name: Release and Homepage Guidance
+    url: https://github.com/peixl/AI-Movie-Player/blob/main/docs/github-launch-kit.md
+    about: Review the launch kit before proposing homepage, release, or branding changes. / 提议首页、发布或品牌展示改动前，先看这份发布面说明。

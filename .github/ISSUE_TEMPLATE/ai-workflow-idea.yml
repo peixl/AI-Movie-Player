@@ -1,0 +1,61 @@
+name: AI Workflow Idea
+description: Suggest a new AI-native viewing workflow / 提交新的 AI 原生观影工作流想法
+title: "[AI Workflow]: "
+labels:
+  - ai
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AI-Movie-Player prefers AI features that feel like natural viewing workflows.
+        AI-Movie-Player 更偏好那些真正融入观影流程的 AI 功能，而不是孤立的噱头按钮。
+
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow Idea / 工作流想法
+      description: Name the workflow and describe the core loop. / 给这个工作流命名，并描述核心流程。
+      placeholder: Example: pre-watch briefing, director context mode, post-watch debate, double-feature curator.
+    validations:
+      required: true
+
+  - type: textarea
+    id: trigger
+    attributes:
+      label: Trigger Point / 触发点
+      description: Where should the workflow begin? / 这个工作流应该从哪里触发？
+      placeholder: Movie detail page, AI chat panel, watchlist, after playback, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Desired Output / 理想输出
+      description: What should the AI return or guide the user through? / AI 应该输出什么，或者引导用户完成什么？
+      placeholder: Structured briefing, concise recap, pairing recommendation, comparison map, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-better
+    attributes:
+      label: Why It Belongs Here / 为什么适合这个产品
+      description: Why does this fit AI-Movie-Player instead of a generic chatbot? / 为什么它适合 AI-Movie-Player，而不是普通聊天机器人？
+      placeholder: Tie it to cinema, local libraries, metadata, or playback context.
+    validations:
+      required: true
+
+  - type: textarea
+    id: failure-mode
+    attributes:
+      label: Failure Mode to Avoid / 要避免的失败方式
+      description: What would make this workflow feel gimmicky or low quality? / 什么情况会让这个功能显得廉价或像噱头？
+      placeholder: Generic output, invented facts, too much branding, redundant recommendations, etc.
+
+  - type: input
+    id: provider-notes
+    attributes:
+      label: Provider Notes / 模型补充
+      description: Optional notes about provider, context size, or local model constraints. / 可选，补充模型、上下文长度或本地部署限制。

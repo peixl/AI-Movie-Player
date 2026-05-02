@@ -1,0 +1,590 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use egui::{Color32, Rounding};
+use rusqlite::Connection;
+use tokio::sync::Mutex;
+
+use crate::api::ai::{AiClient, AiConfig};
+use crate::api::tmdb::TmdbClient;
+use crate::config::settings::AppSettings;
+use crate::db::{connection, models::Movie, movies, settings as db_settings};
+use crate::ui::{
+    add_movie::{AddMovieWizard, WizardState},
+    ai_chat_panel::AiChatPanel,
+    ai_recommend_panel::AiRecommendPanel,
+    batch_ops::BatchOpsPanel,
+    layout::{AppLayout, View},
+    movie_detail::MovieDetailPanel,
+    poster_wall::PosterWall,
+    settings_panel::SettingsPanel,
+    subtitle_panel::SubtitlePanel,
+    theme, watchlist_panel::WatchlistPanel,
+};
+
+/// Toast notification
+struct Toast {
+    message: String,
+    kind: ToastKind,
+    created: std::time::Instant,
+    duration: std::time::Duration,
+}
+
+#[derive(Clone, Copy)]
+enum ToastKind {
+    Success,
+    Info,
+    Error,
+}
+
+pub struct MovieBoxApp {
+    // Core
+    db: Connection,
+    settings: AppSettings,
+    tmdb_client: Arc<Mutex<TmdbClient>>,
+    ai_client: Option<Arc<AiClient>>,
+    app_data_dir: PathBuf,
+    thumbnail_dir: PathBuf,
+    is_dark: bool,
+    runtime: tokio::runtime::Runtime,
+
+    // UI state
+    layout: AppLayout,
+    poster_wall: PosterWall,
+    add_wizard: AddMovieWizard,
+    subtitle_panel: SubtitlePanel,
+    batch_ops: BatchOpsPanel,
+    settings_panel: Option<SettingsPanel>,
+    ai_chat_panel: AiChatPanel,
+    ai_recommend_panel: AiRecommendPanel,
+
+    // Detail
+    selected_movie: Option<Movie>,
+    show_detail: bool,
+
+    // Deferred work
+    pending_import: Option<Vec<PathBuf>>,
+
+    // Notifications
+    toasts: Vec<Toast>,
+    last_view: View,
+}
+
+impl MovieBoxApp {
+    pub fn new(app_data_dir: PathBuf) -> Self {
+        log::info!("Starting AI-Movie-Player v{} · ifq.ai", env!("CARGO_PKG_VERSION"));
+        log::info!("Data directory: {}", app_data_dir.display());
+
+        let db = connection::open_database(&app_data_dir).expect("Failed to open database");
+        let thumbnail_dir = app_data_dir.join("thumbnails");
+        std::fs::create_dir_all(&thumbnail_dir).ok();
+
+        let settings = AppSettings::load_from_db(&|key| {
+            db_settings::get_setting(&db, key)
+                .map_err(|e| crate::util::error::AppError::Database(e))
+        });
+
+        log::info!("Theme: {}, Language: {}", settings.theme, settings.tmdb_language);
+
+        let tmdb_client = Arc::new(Mutex::new(TmdbClient::new(
+            settings.tmdb_api_key.clone(),
+            settings.tmdb_language.clone(),
+        )));
+
+        let ai_client = if !settings.ai_api_key.is_empty() {
+            log::info!("AI configured: endpoint={}, model={}", settings.ai_endpoint, settings.ai_model);
+            Some(Arc::new(AiClient::new(AiConfig {
+                endpoint: settings.ai_endpoint.clone(),
+                api_key: settings.ai_api_key.clone(),
+                model: settings.ai_model.clone(),
+                temperature: settings.ai_temperature,
+                max_tokens: 2048,
+            })))
+        } else {
+            log::info!("AI not configured (no API key)");
+            None
+        };
+
+        let is_dark = settings.theme == "dark";
+
+        let mut poster_wall = PosterWall::new();
+        poster_wall.refresh(&db);
+
+        let movie_count = movies::get_movie_count(&db).unwrap_or(0);
+        log::info!("Library: {} movies loaded", movie_count);
+
+        let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+
+        Self {
+            db,
+            thumbnail_dir,
+            is_dark,
+            layout: AppLayout::new(),
+            poster_wall,
+            add_wizard: AddMovieWizard::new(),
+            subtitle_panel: SubtitlePanel::new(),
+            batch_ops: BatchOpsPanel::new(),
+            settings_panel: None,
+            ai_chat_panel: AiChatPanel::new(),
+            ai_recommend_panel: AiRecommendPanel::new(),
+            selected_movie: None,
+            show_detail: false,
+            pending_import: None,
+            settings,
+            tmdb_client,
+            ai_client,
+            app_data_dir,
+            runtime,
+            toasts: Vec::new(),
+            last_view: View::Library,
+        }
+    }
+}
+
+impl MovieBoxApp {
+    fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
+        let input = ctx.input(|i| i.clone());
+
+        // Ctrl+1..6 to switch views
+        if input.modifiers.ctrl {
+            if input.key_pressed(egui::Key::Num1) || input.key_pressed(egui::Key::Key1) {
+                self.layout.active_view = View::Library;
+                self.show_detail = false;
+            }
+            if input.key_pressed(egui::Key::Num2) || input.key_pressed(egui::Key::Key2) {
+                self.layout.active_view = View::AddMovie;
+            }
+            if input.key_pressed(egui::Key::Num3) || input.key_pressed(egui::Key::Key3) {
+                self.layout.active_view = View::SubtitleSearch;
+            }
+            if input.key_pressed(egui::Key::Num4) || input.key_pressed(egui::Key::Key4) {
+                self.layout.active_view = View::BatchOps;
+            }
+            if input.key_pressed(egui::Key::Num5) || input.key_pressed(egui::Key::Key5) {
+                self.layout.active_view = View::Watchlist;
+            }
+            if input.key_pressed(egui::Key::Num6) || input.key_pressed(egui::Key::Key6) {
+                self.layout.active_view = View::Settings;
+            }
+            if input.key_pressed(egui::Key::Num7) || input.key_pressed(egui::Key::Key7) {
+                self.layout.active_view = View::AiChat;
+            }
+            if input.key_pressed(egui::Key::Num8) || input.key_pressed(egui::Key::Key8) {
+                self.layout.active_view = View::AiRecommend;
+            }
+            if input.key_pressed(egui::Key::F) {
+                self.layout.active_view = View::Library;
+                self.show_detail = false;
+            }
+        }
+
+        // Escape to go back from detail or to library
+        if input.key_pressed(egui::Key::Escape) {
+            if self.show_detail {
+                self.show_detail = false;
+                self.poster_wall.selected_id = None;
+            } else {
+                self.layout.active_view = View::Library;
+            }
+        }
+    }
+}
+
+impl MovieBoxApp {
+    fn push_toast(&mut self, message: impl Into<String>, kind: ToastKind) {
+        self.toasts.push(Toast {
+            message: message.into(),
+            kind,
+            created: std::time::Instant::now(),
+            duration: std::time::Duration::from_secs(3),
+        });
+    }
+
+    fn render_toasts(&mut self, ctx: &egui::Context) {
+        let now = std::time::Instant::now();
+        self.toasts.retain(|t| now.duration_since(t.created) < t.duration);
+
+        if self.toasts.is_empty() {
+            return;
+        }
+
+        let mut y_offset = 60.0;
+
+        for (i, toast) in self.toasts.iter().enumerate() {
+            let elapsed = now.duration_since(toast.created).as_secs_f32();
+            let duration = toast.duration.as_secs_f32();
+            let remaining = (duration - elapsed).max(0.0);
+
+            // Fade in/out
+            let fade = if elapsed < 0.2 {
+                elapsed / 0.2
+            } else if remaining < 0.5 {
+                remaining / 0.5
+            } else {
+                1.0
+            };
+
+            let (bg, icon) = match toast.kind {
+                ToastKind::Success => (Color32::from_rgb(6, 78, 59), "✓"),
+                ToastKind::Error => (Color32::from_rgb(127, 29, 29), "✗"),
+                ToastKind::Info => (Color32::from_rgb(30, 41, 59), "ℹ"),
+            };
+
+            egui::Area::new(egui::Id::new(format!("toast_{}", i)))
+                .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, y_offset))
+                .order(egui::Order::Foreground)
+                .show(ctx, |ui| {
+                    let text_color = Color32::from_rgba_premultiplied(255, 255, 255, (fade * 255.0) as u8);
+                    let bg_color = Color32::from_rgba_premultiplied(
+                        bg.r(), bg.g(), bg.b(), (fade.clamp(0.0, 0.95) * 255.0) as u8,
+                    );
+
+                    let galley = ui.painter().layout_no_wrap(
+                        format!("{}  {}", icon, toast.message),
+                        egui::FontId::proportional(13.0),
+                        text_color,
+                    );
+                    let padding = egui::vec2(16.0, 8.0);
+                    let size = galley.size() + padding * 2.0;
+                    let rect = egui::Rect::from_min_size(
+                        egui::pos2(ui.max_rect().center().x - size.x / 2.0, y_offset),
+                        size,
+                    );
+                    ui.painter().rect_filled(rect, Rounding::same(8.0), bg_color);
+                    ui.painter().galley(
+                        rect.min + padding,
+                        galley,
+                        text_color,
+                    );
+                });
+
+            y_offset += 44.0;
+        }
+    }
+}
+
+impl eframe::App for MovieBoxApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        theme::apply_theme(ctx, self.is_dark);
+
+        // --- Keyboard shortcuts ---
+        self.handle_keyboard_shortcuts(ctx);
+
+        // --- View change detection ---
+        let current_view = self.layout.active_view;
+        if current_view != self.last_view {
+            self.last_view = current_view;
+            let view_name = match current_view {
+                View::Library => "片库 / Library",
+                View::AddMovie => "导入影片 / Add Movies",
+                View::SubtitleSearch => "字幕 / Subtitles",
+                View::BatchOps => "批量操作 / Batch Operations",
+                View::Watchlist => "片单 / Watchlist",
+                View::Settings => "设置 / Settings",
+                View::AiChat => "AI 对话 / AI Companion",
+                View::AiRecommend => "AI 推荐 / AI Taste Engine",
+            };
+            self.push_toast(format!("已切换到 / Switched to {}", view_name), ToastKind::Info);
+        }
+
+        // --- Poll AI chat stream ---
+        self.ai_chat_panel.poll_stream();
+
+        // --- Handle pending async work ---
+
+        // Pending import after folder selection
+        if let Some(files) = self.pending_import.take() {
+            self.add_wizard.state = WizardState::SearchingTMDB;
+
+            let client = self.tmdb_client.clone();
+            let thumbnail_dir = self.thumbnail_dir.clone();
+
+            self.runtime.spawn(async move {
+                let mut search_results = Vec::new();
+                let client_guard = client.lock().await;
+
+                for file in &files {
+                    let filename = file
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    let parsed = crate::core::filename_parser::parse_filename(&filename);
+
+                    match client_guard
+                        .search_movies(&parsed.title, parsed.year)
+                        .await
+                    {
+                        Ok(results) => {
+                            search_results.push((file.clone(), results));
+                        }
+                        Err(e) => {
+                            log::warn!("TMDB search failed for {}: {}", filename, e);
+                            search_results.push((file.clone(), vec![]));
+                        }
+                    }
+                }
+                // Results are stored via a channel or mutable state;
+                // for now we handle this through the wizard state machine
+            });
+
+            self.add_wizard.set_found(files.len());
+        }
+
+        // Handle poster wall selection → show detail
+        if let Some(movie_id) = self.poster_wall.selected_id {
+            if self.layout.active_view == View::Library {
+                if let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id) {
+                    self.selected_movie = Some(movie);
+                    self.show_detail = true;
+                }
+            }
+        }
+
+        // --- Sidebar ---
+        egui::SidePanel::left("sidebar")
+            .resizable(false)
+            .default_width(200.0)
+            .min_width(180.0)
+            .show(ctx, |ui| {
+                let movie_count = movies::get_movie_count(&self.db).unwrap_or(0);
+                self.layout.show_sidebar(ui, ctx, self.is_dark, movie_count);
+            });
+
+        // --- Content ---
+        egui::CentralPanel::default().show(ctx, |ui| {
+            match self.layout.active_view {
+                View::Library => {
+                    if self.show_detail {
+                        if let Some(ref movie) = self.selected_movie {
+                            ui.horizontal(|ui| {
+                                if ui.button("← 返回 / Back").clicked() {
+                                    self.show_detail = false;
+                                    self.poster_wall.selected_id = None;
+                                }
+                                ui.heading(&movie.title);
+                            });
+                            ui.add_space(4.0);
+                            let movie_clone = movie.clone();
+                            let detail_action = MovieDetailPanel::show(ui, &movie_clone, &self.db, self.is_dark);
+
+                            match detail_action {
+                                crate::ui::movie_detail::DetailAction::AiAnalyze => {
+                                    self.ai_chat_panel.select_movie(Some(movie_clone));
+                                    self.layout.active_view = View::AiChat;
+                                }
+                                crate::ui::movie_detail::DetailAction::SearchSubtitles => {
+                                    self.subtitle_panel.select_movie(movie.id);
+                                    self.layout.active_view = View::SubtitleSearch;
+                                }
+                                _ => {}
+                            }
+                        }
+                    } else {
+                        self.poster_wall.show(ui, ctx, &self.db, self.is_dark);
+                    }
+                }
+
+                View::AddMovie => {
+                    // Folder picker
+                    if self.add_wizard.state == WizardState::SelectingFolder {
+                        if let Some(path) = rfd::FileDialog::new().pick_folder() {
+                            self.add_wizard.scan_folder(path, &self.db);
+                            let files = self.add_wizard.get_found_files().to_vec();
+                            if !files.is_empty() {
+                                self.add_wizard.state = WizardState::SearchingTMDB;
+                                // Import is handled synchronously via block_on
+                                // for simplicity (a few seconds max for a folder)
+                                let client = self.tmdb_client.clone();
+                                self.runtime.spawn(async move {
+                                    let client = client.lock().await;
+                                    for file in &files {
+                                        let filename = file
+                                            .file_name()
+                                            .map(|n| n.to_string_lossy().to_string())
+                                            .unwrap_or_default();
+                                        let parsed =
+                                            crate::core::filename_parser::parse_filename(&filename);
+                                        client.search_movies(&parsed.title, parsed.year).await.ok();
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // Import trigger
+                    if self.add_wizard.state == WizardState::Importing {
+                        let file_count = self.add_wizard.get_found_files().len();
+                        self.add_wizard.add_log(format!(
+                            "正在导入 {} 个文件，完成后请刷新片库 / Importing {} files, refresh the library after completion",
+                            file_count,
+                            file_count
+                        ));
+                        self.add_wizard.state = WizardState::Done;
+                        // Refresh poster wall
+                        self.poster_wall.mark_dirty();
+                    }
+
+                    self.add_wizard.show(
+                        ui,
+                        &self.db,
+                        &self.tmdb_client,
+                        &self.thumbnail_dir,
+                        self.is_dark,
+                    );
+                }
+
+                View::SubtitleSearch => {
+                    self.subtitle_panel.show(ui, &self.db, self.is_dark);
+
+                    // Handle subtitle search trigger
+                    if self.subtitle_panel.searching {
+                        if let Some(movie_id) = self.subtitle_panel.movie_id {
+                            if let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id) {
+                                let query = crate::db::models::SubtitleQuery {
+                                    title: movie.title.clone(),
+                                    year: movie.year,
+                                    file_hash: movie.file_hash.clone(),
+                                    languages: self.settings.subtitle_languages.clone(),
+                                    imdb_id: movie.imdb_id.clone(),
+                                };
+
+                                self.subtitle_panel.searching = false;
+
+                                let client = self.tmdb_client.clone();
+                                self.runtime.spawn(async move {
+                                    match crate::core::subtitle_finder::SubtitleFinder::search_all_sources(&query).await {
+                                        Ok(_results) => {
+                                            // Store results — for now, mark as done
+                                            // Full integration requires channel back to UI
+                                        }
+                                        Err(e) => {
+                                            log::warn!("Subtitle search failed: {}", e);
+                                        }
+                                    }
+                                });
+
+                                self.subtitle_panel.message = Some(
+                                    "正在搜索 OpenSubtitles、assrt.net 与 zimuku... / Searching subtitle sources...".into(),
+                                );
+                            }
+                        }
+                    }
+                }
+
+                View::BatchOps => {
+                    self.batch_ops.show(ui, self.is_dark);
+                }
+
+                View::Watchlist => {
+                    WatchlistPanel::show(ui, &self.db, self.is_dark);
+                }
+
+                View::Settings => {
+                    if self.settings_panel.is_none() {
+                        self.settings_panel = Some(SettingsPanel::new(&self.db));
+                    }
+                    if let Some(ref mut panel) = self.settings_panel {
+                        let old_is_dark = self.is_dark;
+                        panel.show(ui, &self.db, self.is_dark);
+
+                        if panel.is_dark != old_is_dark {
+                            self.is_dark = panel.is_dark;
+                        }
+
+                        if panel.saved {
+                            panel.saved = false;
+                            let new_key = panel.tmdb_key.clone();
+                            let new_lang = panel.language.clone();
+                            let client = self.tmdb_client.clone();
+
+                            let ai_endpoint = panel.ai_endpoint.clone();
+                            let ai_api_key = panel.ai_api_key.clone();
+                            let ai_model = panel.ai_model.clone();
+                            let ai_temperature = panel.ai_temperature;
+
+                            self.runtime.spawn(async move {
+                                let mut c = client.lock().await;
+                                *c = TmdbClient::new(new_key, new_lang);
+                            });
+
+                            self.ai_client = if !ai_api_key.is_empty() {
+                                Some(Arc::new(AiClient::new(AiConfig {
+                                    endpoint: ai_endpoint,
+                                    api_key: ai_api_key,
+                                    model: ai_model,
+                                    temperature: ai_temperature,
+                                    max_tokens: 2048,
+                                })))
+                            } else {
+                                None
+                            };
+                        }
+                    }
+                }
+
+                View::AiChat => {
+                    let library = match movies::get_all_movies(&self.db) {
+                        Ok(m) => m,
+                        Err(_) => Vec::new(),
+                    };
+                    self.ai_chat_panel.show(
+                        ui,
+                        &self.db,
+                        &self.ai_client,
+                        &library,
+                        &self.runtime,
+                        self.is_dark,
+                    );
+                }
+
+                View::AiRecommend => {
+                    let library = match movies::get_all_movies(&self.db) {
+                        Ok(m) => m,
+                        Err(_) => Vec::new(),
+                    };
+                    self.ai_recommend_panel.show(
+                        ui,
+                        &self.ai_client,
+                        &library,
+                        &self.runtime,
+                        self.is_dark,
+                    );
+                }
+            }
+        });
+
+        // Render toast notifications
+        self.render_toasts(ctx);
+
+        // Footer status bar
+        egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                let movie_count = movies::get_movie_count(&self.db).unwrap_or(0);
+                let tmdb_status = if !self.settings.tmdb_api_key.is_empty() {
+                    "TMDB ✓"
+                } else {
+                    "TMDB 未设置 / not set"
+                };
+                ui.label(format!(
+                    "AI-Movie-Player | {} movies | {} | ifq.ai",
+                    movie_count, tmdb_status
+                ));
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let dim = if self.is_dark {
+                        Color32::from_rgb(100, 100, 115)
+                    } else {
+                        Color32::from_rgb(140, 140, 155)
+                    };
+                    ui.label(
+                        egui::RichText::new("Ctrl+1-8 切换视图 / switch views | Esc 返回 / back | Ctrl+F 搜索 / search")
+                            .size(11.0)
+                            .color(dim),
+                    );
+                });
+            });
+        });
+
+        ctx.request_repaint_after(std::time::Duration::from_millis(500));
+    }
+}
