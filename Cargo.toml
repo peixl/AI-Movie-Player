@@ -41,7 +41,7 @@ regex = "1"
 
 # Subtitle
 encoding_rs = "0.8"
-zip = "2"
+zip = "7"
 
 # HTML scraping
 scraper = "0.22"
