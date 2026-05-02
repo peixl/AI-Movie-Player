@@ -1,6 +1,11 @@
+//! Application settings model and persistence.
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+/// User-configurable application settings persisted in the database.
+///
+/// Covers TMDB API, AI provider, theme, subtitle languages, and library paths.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub tmdb_api_key: String,

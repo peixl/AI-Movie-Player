@@ -1,3 +1,5 @@
+//! Visual poster grid browsing with LRU texture cache.
+
 use egui::{Color32, Context, RichText, Rounding, Sense, TextureHandle, Ui, Vec2};
 use rusqlite::Connection;
 use std::collections::{HashMap, VecDeque};
@@ -10,6 +12,7 @@ const POSTER_HEIGHT: f32 = 240.0;
 const GAP: f32 = 12.0;
 const TEXTURE_CACHE_MAX: usize = 200;
 
+/// Sort order for the poster wall grid.
 #[derive(Debug, Clone, PartialEq)]
 pub enum SortOrder {
     DateAdded,
@@ -18,6 +21,7 @@ pub enum SortOrder {
     Rating,
 }
 
+/// Filters applied to the poster wall (genre, year range, rating, search, sort).
 #[derive(Debug, Clone)]
 pub struct PosterFilter {
     pub genre: Option<String>,
@@ -142,10 +146,9 @@ impl PosterWall {
 
                     // Only render visible posters
                     if ui.is_rect_visible(poster_rect) {
-                        let poster_pos = ui.next_widget_position().min + egui::vec2(GAP, GAP);
                         self.render_poster_card(
                             ui, ctx, movie, actual_poster_width, actual_poster_height,
-                            text_color, dim_color,
+                            text_color, dim_color, is_dark,
                         );
                     }
 
@@ -180,6 +183,7 @@ impl PosterWall {
         height: f32,
         text_color: Color32,
         dim_color: Color32,
+        is_dark: bool,
     ) {
         let (rect, response) = ui.allocate_exact_size(
             Vec2::new(width, height + 40.0),
@@ -211,8 +215,12 @@ impl PosterWall {
             ui.painter().rect_filled(shadow_rect, Rounding::same(10.0), shadow_color);
         }
 
-        // Draw poster background
-        let bg_color = Color32::from_rgb(40, 40, 55);
+        // Draw poster background with shimmer while loading
+        let bg_color = if is_dark {
+            Color32::from_rgb(40, 40, 55)
+        } else {
+            Color32::from_rgb(230, 230, 240)
+        };
 
         if let Some(ref local_path) = movie.poster_local {
             if let Some(texture) = self.texture_cache.get(&movie.id) {
@@ -230,6 +238,10 @@ impl PosterWall {
                 );
                 ui.painter().add(mesh);
             } else {
+                // Show shimmer while loading texture from disk
+                let shimmer_color = crate::ui::animation::skeleton_poster_color(ctx, is_dark);
+                ui.painter().rect_filled(poster_img_rect, rounding, shimmer_color);
+
                 // Load texture
                 if let Ok(img) = image::open(local_path) {
                     let size = [img.width() as usize, img.height() as usize];
@@ -277,38 +289,20 @@ impl PosterWall {
             );
         }
 
-        // Title below poster
+        // Title below poster (use layout with max_width for automatic truncation)
         let title_y = poster_img_rect.max.y + 4.0;
         let title = if let Some(ref cn) = movie.title_cn {
             cn.clone()
         } else {
             movie.title.clone()
         };
-        let title_galley = ui.painter().layout_no_wrap(
-            title.clone(),
+        let title_galley = ui.painter().layout(
+            title,
             egui::FontId::proportional(12.0),
             text_color,
+            width,
         );
-        // Truncate if too long
-        let title_text = if title_galley.size().x > width {
-            let mut truncated = title.clone();
-            while ui.painter().layout_no_wrap(
-                format!("{}...", truncated),
-                egui::FontId::proportional(12.0),
-                text_color,
-            ).size().x > width && truncated.len() > 3 {
-                truncated.pop();
-            }
-            format!("{}...", truncated)
-        } else {
-            title
-        };
-        let final_galley = ui.painter().layout_no_wrap(
-            title_text,
-            egui::FontId::proportional(12.0),
-            text_color,
-        );
-        ui.painter().galley(egui::pos2(rect.min.x, title_y), final_galley, text_color);
+        ui.painter().galley(egui::pos2(rect.min.x, title_y), title_galley, text_color);
 
         // Year + Rating on second line
         let info_y = title_y + 16.0;

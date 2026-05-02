@@ -16,7 +16,82 @@
 
 AI-Movie-Player 是一个基于 Rust 与 egui 构建的桌面电影播放器与片库助手。它把本地片库管理、TMDB 元数据、字幕工作流、海报墙浏览和 OpenAI-compatible AI 能力整合在一个更安静、更自然的电影体验里。
 
-这个项目想做的不是“给播放器加一个 AI 按钮”，而是把“选片、看片、看后理解、片库管理”这整个链路做得更完整、更优雅。
+这个项目想做的不是"给播放器加一个 AI 按钮"，而是把"选片、看片、看后理解、片库管理"这整个链路做得更完整、更优雅。
+
+## 技术栈
+
+| 层级 | 技术 |
+| --- | --- |
+| 语言 | Rust (edition 2024, MSRV 1.85) |
+| GUI 框架 | [egui](https://github.com/emilk/egui) / eframe 0.31 |
+| 异步运行时 | [Tokio](https://tokio.rs) |
+| 数据库 | [SQLite](https://sqlite.org) via rusqlite (WAL 模式, FTS5) |
+| HTTP 客户端 | [reqwest](https://github.com/seanmonstar/reqwest) (gzip, brotli, stream) |
+| 图像处理 | [image](https://github.com/image-rs/image) crate |
+| 错误处理 | [thiserror](https://github.com/dtolnay/thiserror) + [anyhow](https://github.com/dtolnay/anyhow) |
+| CI/CD | GitHub Actions (多平台矩阵) |
+
+## 架构
+
+```mermaid
+graph TB
+    subgraph UI["UI 层 (egui)"]
+        App[app.rs]
+        Layout[layout.rs]
+        PosterWall[poster_wall.rs]
+        MovieDetail[movie_detail.rs]
+        AiChat[ai_chat_panel.rs]
+        AiRec[ai_recommend_panel.rs]
+        Settings[settings_panel.rs]
+    end
+
+    subgraph Core["核心层"]
+        MovieModel[core/movie.rs]
+        SubParser[core/subtitle_parser.rs]
+        FilenameParser[core/filename_parser.rs]
+    end
+
+    subgraph API["API 层"]
+        AiClient[api/ai.rs]
+        TmdbClient[api/tmdb.rs]
+        SubClient[api/subtitle.rs]
+    end
+
+    subgraph DB["数据库层"]
+        MoviesDB[db/movies.rs]
+        SettingsDB[db/settings.rs]
+        Schema[db/schema.rs]
+    end
+
+    subgraph External["外部服务"]
+        OpenAI[OpenAI / Ollama / LM Studio]
+        TMDB[TMDB API v3]
+        SubSources[字幕来源]
+    end
+
+    App --> Layout
+    App --> PosterWall
+    App --> MovieDetail
+    App --> AiChat
+    App --> AiRec
+    App --> Settings
+    App --> MoviesDB
+    App --> SettingsDB
+
+    AiChat --> AiClient
+    AiRec --> AiClient
+    MovieDetail --> TmdbClient
+    Settings --> TmdbClient
+
+    AiClient --> OpenAI
+    TmdbClient --> TMDB
+    SubClient --> SubSources
+
+    MoviesDB --> Schema
+    SettingsDB --> Schema
+    PosterWall --> MoviesDB
+    MovieDetail --> MoviesDB
+```
 
 ## 为什么是 AI-Movie-Player
 
@@ -80,20 +155,6 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 | 海报墙 | 用更直观的视觉方式浏览收藏。 |
 | 片单 | 管理接下来准备看的影片。 |
 
-## 截图规划
-
-推荐在 GitHub 首页展示这样一组截图：
-
-| 顺序 | 建议内容 | 目的 |
-| --- | --- | --- |
-| 1 | 海报墙与较完整的本地片库 | 建立“这不是玩具，而是认真工具”的第一印象。 |
-| 2 | 选中影片后的 AI Companion 对话 | 证明产品是 AI 原生，而不是贴一个 AI 按钮。 |
-| 3 | AI 推荐页 | 展示基于片库的智能理解能力。 |
-| 4 | 电影详情页与 AI 入口 | 展示浏览、元数据和 AI 流程是连在一起的。 |
-| 5 | 字幕搜索与下载流程 | 证明它也解决真实观影里的实用问题。 |
-
-更完整的截图和发布说明见 [docs/github-launch-kit-cn.md](docs/github-launch-kit-cn.md)。
-
 ## 与普通播放器相比
 
 | 能力 | 普通播放器 | AI-Movie-Player |
@@ -108,7 +169,15 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 
 ## 快速开始
 
-### 环境要求
+### 预编译版本
+
+从 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面下载适合您平台的最新版本：
+
+- **Windows**: `.zip` 压缩包
+- **macOS**: 包含 `.app` bundle 的 `.tar.gz`
+- **Linux**: `.tar.gz` 压缩包
+
+### 环境要求（从源码构建）
 
 - Rust 1.85+
 - 一个来自 [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) 的 TMDB API Key
@@ -121,22 +190,6 @@ git clone https://github.com/peixl/AI-Movie-Player.git
 cd AI-Movie-Player
 cargo run --release
 ```
-
-### Releases
-
-可以在 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面发布并下载 Windows 与 macOS 两个平台的软件包。
-
-仓库现在已经补上了面向两个主要桌面平台的发布工作流：
-
-- Windows 软件包：`.zip`
-- macOS 软件包：包含 `.app` bundle 的 `.tar.gz`
-
-首个正式版本的完整发布文案包见 [docs/release-package-v0.2.1-cn.md](docs/release-package-v0.2.1-cn.md)。
-
-在依赖可用后，也可以本地执行打包脚本：
-
-- Windows：`pwsh ./scripts/package-windows.ps1`
-- macOS：`bash ./scripts/package-macos.sh`
 
 ## AI 配置
 
@@ -173,20 +226,64 @@ LM Studio -> http://localhost:1234/v1
 ```text
 ai-movie-player/
 ├── src/
-│   ├── main.rs
-│   ├── app.rs
-│   ├── ai/
+│   ├── main.rs                  # 入口，Tokio 运行时初始化
+│   ├── app.rs                   # 应用核心结构体 (eframe::App)
+│   ├── ai/                      # AI 提示词构建与工作流逻辑
 │   ├── api/
+│   │   ├── ai.rs                # OpenAI 兼容流式客户端
+│   │   └── tmdb.rs              # TMDB API v3 客户端
 │   ├── core/
+│   │   ├── filename_parser.rs   # 从文件名提取元数据
+│   │   ├── file_organizer.rs    # 文件整理与重命名
+│   │   ├── library_manager.rs   # 片库扫描与导入
+│   │   ├── metadata_service.rs  # TMDB 元数据补全
+│   │   └── subtitle_finder.rs   # 字幕搜索协调
 │   ├── db/
-│   ├── thumbnail/
+│   │   ├── schema.rs            # SQLite schema 与迁移
+│   │   ├── movies.rs            # Movie CRUD 操作
+│   │   └── settings.rs          # 设置键值存储
 │   ├── ui/
+│   │   ├── layout.rs            # 侧边栏导航与视图路由
+│   │   ├── theme.rs             # 颜色系统与主题辅助
+│   │   ├── icons.rs             # 程序化手绘图标系统
+│   │   ├── animation.rs         # hover、shimmer、toast 动效
+│   │   ├── poster_wall.rs       # 海报墙视觉浏览
+│   │   ├── movie_detail.rs      # 电影详情面板（含海报缓存）
+│   │   ├── ai_chat_panel.rs     # AI 伴侣流式对话
+│   │   ├── ai_recommend_panel.rs# AI 口味引擎推荐
+│   │   ├── settings_panel.rs    # 设置与 AI 配置
+│   │   ├── add_movie.rs         # 影片导入工作流
+│   │   ├── subtitle_panel.rs    # 字幕搜索与下载
+│   │   ├── batch_ops.rs         # 批量操作
+│   │   └── watchlist_panel.rs   # 片单管理
 │   ├── config/
+│   │   └── settings.rs          # AppSettings 模型
+│   ├── thumbnail/
+│   │   └── generator.rs         # 视频缩略图提取
 │   └── util/
-├── README.md
-├── readme-cn.md
-├── CONTRIBUTING.md
-└── CHANGELOG.md
+│       ├── error.rs             # AppError 类型
+│       └── fs.rs                # 文件系统工具
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml               # CI: fmt, clippy, test, doc, build
+│   │   ├── release.yml          # Release: 多平台打包 + 校验和
+│   │   ├── labeler.yml          # 按文件路径自动标记 PR
+│   │   └── stale.yml            # 自动关闭过期 issue
+│   ├── ISSUE_TEMPLATE/          # Bug 报告、功能请求模板
+│   ├── PULL_REQUEST_TEMPLATE.md # PR 检查清单
+│   └── CODEOWNERS               # 代码所有权定义
+├── docs/                        # 发布工具包、发布说明
+├── Cargo.toml                   # 依赖与元数据
+├── rustfmt.toml                 # 格式化配置
+├── clippy.toml                  # Clippy 检查配置
+├── README.md                    # 英文文档
+├── readme-cn.md                 # 中文文档
+├── CONTRIBUTING.md              # 英文贡献指南
+├── contributing-cn.md           # 中文贡献指南
+├── CHANGELOG.md                 # 英文更新日志
+├── changelog-cn.md              # 中文更新日志
+├── SECURITY.md                  # 安全政策
+└── LICENSE                      # MIT 许可证
 ```
 
 ## 开发
@@ -208,9 +305,9 @@ cargo build --release
 - 中文贡献指南： [contributing-cn.md](contributing-cn.md)
 - 英文更新日志： [CHANGELOG.md](CHANGELOG.md)
 - 中文更新日志： [changelog-cn.md](changelog-cn.md)
+- 安全政策： [SECURITY.md](SECURITY.md)
 - GitHub 英文发布说明： [docs/github-launch-kit.md](docs/github-launch-kit.md)
 - GitHub 中文发布说明： [docs/github-launch-kit-cn.md](docs/github-launch-kit-cn.md)
-- 首个正式版本发布包： [docs/release-package-v0.2.1-cn.md](docs/release-package-v0.2.1-cn.md)
 
 ## 路线图
 
@@ -245,5 +342,12 @@ cargo build --release
 ## 许可证
 
 MIT，详见 [LICENSE](LICENSE)。
+
+## 致谢
+
+- [TMDB](https://www.themoviedb.org/) 提供电影元数据和海报 API。
+- [egui](https://github.com/emilk/egui) 提供即时模式 GUI 框架。
+- [OpenAI](https://openai.com) 定义了被生态系统广泛采用的 Chat Completions API 标准。
+- [Ollama](https://ollama.com) 和 [LM Studio](https://lmstudio.ai) 社区推动本地 AI 工具发展。
 
 由 [ifq.ai](https://ifq.ai) 用心打造。

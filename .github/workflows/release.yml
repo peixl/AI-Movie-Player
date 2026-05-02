@@ -26,6 +26,9 @@ jobs:
           - os: macos-latest
             label: macOS package
             artifact_name: macos-package
+          - os: ubuntu-latest
+            label: Linux package
+            artifact_name: linux-package
 
     steps:
       - uses: actions/checkout@v4
@@ -36,58 +39,26 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Build release binary
-        run: cargo build --release
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev libasound2-dev
 
       - name: Package Windows build
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          $version = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { 'dev' }
-          $packageRoot = "dist/AI-Movie-Player-$version-windows-x64"
-          New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
-          Copy-Item "target/release/ai-movie-player.exe" "$packageRoot/AI-Movie-Player.exe"
-          Copy-Item "README.md", "readme-cn.md", "LICENSE" $packageRoot
-          Compress-Archive -Path "$packageRoot/*" -DestinationPath "dist/AI-Movie-Player-$version-windows-x64.zip" -Force
+        run: ./scripts/package-windows.ps1 -Version "${{ github.ref_name || 'dev' }}"
 
       - name: Package macOS build
         if: runner.os == 'macOS'
         shell: bash
-        run: |
-          version="${GITHUB_REF_NAME:-dev}"
-          package_root="dist/AI-Movie-Player-${version}-macOS-${RUNNER_ARCH}"
-          app_root="$package_root/AI-Movie-Player.app"
-          mkdir -p "$app_root/Contents/MacOS" "$app_root/Contents/Resources"
-          cp target/release/ai-movie-player "$app_root/Contents/MacOS/AI-Movie-Player"
-          chmod +x "$app_root/Contents/MacOS/AI-Movie-Player"
-          cat > "$app_root/Contents/Info.plist" <<EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-            <dict>
-              <key>CFBundleDisplayName</key>
-              <string>AI-Movie-Player</string>
-              <key>CFBundleExecutable</key>
-              <string>AI-Movie-Player</string>
-              <key>CFBundleIdentifier</key>
-              <string>ai.ifq.AIMoviePlayer</string>
-              <key>CFBundleName</key>
-              <string>AI-Movie-Player</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>${version}</string>
-              <key>CFBundleVersion</key>
-              <string>${version}</string>
-              <key>LSMinimumSystemVersion</key>
-              <string>12.0</string>
-              <key>NSHighResolutionCapable</key>
-              <true/>
-            </dict>
-          </plist>
-          EOF
-          cp README.md readme-cn.md LICENSE "$package_root/"
-          tar -czf "dist/AI-Movie-Player-${version}-macOS-${RUNNER_ARCH}.tar.gz" -C dist "$(basename "$package_root")"
+        run: ./scripts/package-macos.sh "${GITHUB_REF_NAME:-dev}"
+
+      - name: Package Linux build
+        if: runner.os == 'Linux'
+        shell: bash
+        run: ./scripts/package-linux.sh "${GITHUB_REF_NAME:-dev}"
 
       - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4
@@ -112,6 +83,10 @@ jobs:
         with:
           files: |
             release-assets/windows-package/*.zip
+            release-assets/windows-package/*.sha256
             release-assets/macos-package/*.tar.gz
+            release-assets/macos-package/*.sha256
+            release-assets/linux-package/*.tar.gz
+            release-assets/linux-package/*.sha256
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}

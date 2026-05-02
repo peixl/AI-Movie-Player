@@ -146,6 +146,34 @@ For the README and repo landing experience, keep the story in this order:
 5. Comparison with ordinary players.
 6. Roadmap and FAQ.
 
+## Quick Setup Checklist
+
+### Repository Settings
+
+- [ ] Set repository description: `AI-native movie player for local libraries with cinematic chat, library-aware recommendations, metadata, subtitles, and poster-wall browsing.`
+- [ ] Set repository website: `https://ifq.ai`
+- [ ] Add topics (see Suggested Topics above)
+- [ ] Enable Discussions with categories (see Suggested Discussions Categories above)
+- [ ] Upload social preview image (1280x640px)
+- [ ] Set CODEOWNERS file (already in `.github/CODEOWNERS`)
+
+### GitHub Features
+
+- [ ] Enable issue templates (already in `.github/ISSUE_TEMPLATE/`)
+- [ ] Enable PR template (already in `.github/PULL_REQUEST_TEMPLATE.md`)
+- [ ] Configure branch protection for `main` (require PR reviews)
+- [ ] Enable vulnerability alerts in Security tab
+- [ ] Enable Dependabot for dependency updates
+
+### Social Preview Image
+
+Create a 1280x640px image with:
+- Dark, cinematic background
+- One hero screenshot (poster wall or AI companion)
+- Single headline: "AI-native movie player for people who care about cinema."
+- Small ifq.ai signature in corner
+- No busy grids or feature overload
+
 ## Tone Rules
 
 - Quiet premium beats loud futurism.

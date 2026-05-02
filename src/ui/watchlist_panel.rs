@@ -1,8 +1,11 @@
+//! Watchlist management panel with workflow cards.
+
 use egui::{Color32, RichText, Ui};
 use rusqlite::Connection;
 
 use crate::db::watchlist;
 
+/// Watchlist panel for managing movies to watch and completed viewings.
 pub struct WatchlistPanel;
 
 impl WatchlistPanel {

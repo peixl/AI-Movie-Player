@@ -1,8 +1,14 @@
-use egui::{Color32, RichText, Rounding, Ui, Vec2};
+//! Movie detail panel with cached poster textures.
+
+use egui::{Color32, RichText, Rounding, TextureHandle, Ui, Vec2};
 use rusqlite::Connection;
 
-use crate::db::{models::{CastMember, Movie}, subtitles as sub_db, watchlist};
+use crate::db::{
+    models::{CastMember, Movie},
+    subtitles as sub_db, watchlist,
+};
 
+/// Actions triggered from the movie detail panel.
 #[derive(PartialEq)]
 pub enum DetailAction {
     None,
@@ -10,22 +16,28 @@ pub enum DetailAction {
     AiAnalyze,
 }
 
-pub struct MovieDetailPanel;
+/// Stateful movie detail panel with poster texture caching.
+pub struct MovieDetailPanel {
+    cached_poster: Option<(i64, TextureHandle)>,
+}
 
 impl MovieDetailPanel {
+    pub fn new() -> Self {
+        Self { cached_poster: None }
+    }
+
     /// Show movie detail. Returns the action the user wants to take.
     pub fn show(
+        &mut self,
         ui: &mut Ui,
         movie: &Movie,
         db: &Connection,
         is_dark: bool,
     ) -> DetailAction {
         let mut action = DetailAction::None;
-        let text = if is_dark { Color32::from_rgb(240, 240, 245) }
-            else { Color32::from_rgb(15, 15, 25) };
-        let dim = if is_dark { Color32::from_rgb(150, 150, 165) }
-            else { Color32::from_rgb(100, 100, 115) };
-        let primary = Color32::from_rgb(99, 102, 241);
+        let text = crate::ui::theme::text_color(is_dark);
+        let dim = crate::ui::theme::dim_color(is_dark);
+        let primary = crate::ui::theme::primary_color();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             // Title + AI Analyze button
@@ -50,27 +62,37 @@ impl MovieDetailPanel {
 
             // Poster + basic info
             ui.horizontal(|ui| {
-                // Poster
+                // Poster (cached — only decodes from disk once per movie)
                 if let Some(ref poster_path) = movie.poster_local {
-                    if let Ok(img) = image::open(poster_path) {
-                        let size = [img.width() as _, img.height() as _];
-                        let rgba = img.to_rgba8();
-                        let color_img = egui::ColorImage::from_rgba_unmultiplied(size, &rgba.into_raw());
-                        let texture = ui.ctx().load_texture(
-                            format!("detail_poster_{}", movie.id),
-                            color_img,
-                            egui::TextureOptions::LINEAR,
-                        );
+                    let needs_load =
+                        self.cached_poster.as_ref().map_or(true, |(id, _)| *id != movie.id);
+                    if needs_load {
+                        if let Ok(img) = image::open(poster_path) {
+                            let size = [img.width() as _, img.height() as _];
+                            let rgba = img.to_rgba8();
+                            let color_img =
+                                egui::ColorImage::from_rgba_unmultiplied(size, &rgba.into_raw());
+                            let texture = ui.ctx().load_texture(
+                                format!("detail_poster_{}", movie.id),
+                                color_img,
+                                egui::TextureOptions::LINEAR,
+                            );
+                            self.cached_poster = Some((movie.id, texture));
+                        }
+                    }
+                    if let Some((_, ref texture)) = self.cached_poster {
                         let max_size = Vec2::new(200.0, 300.0);
-                        let aspect = size[0] as f32 / size[1] as f32;
-                        let display_size = if aspect > 2.0/3.0 {
+                        let tex_size = texture.size();
+                        let aspect = tex_size[0] as f32 / tex_size[1] as f32;
+                        let display_size = if aspect > 2.0 / 3.0 {
                             Vec2::new(max_size.x, max_size.x / aspect)
                         } else {
                             Vec2::new(max_size.y * aspect, max_size.y)
                         };
-                        ui.image(egui::ImageSource::Texture(
-                            egui::load::SizedTexture::new(texture.id(), display_size)
-                        ));
+                        ui.image(egui::ImageSource::Texture(egui::load::SizedTexture::new(
+                            texture.id(),
+                            display_size,
+                        )));
                     }
                 }
 
@@ -79,9 +101,17 @@ impl MovieDetailPanel {
                     if let Some(rating) = movie.rating {
                         ui.horizontal(|ui| {
                             let color = super::theme::rating_color(rating);
-                            ui.label(RichText::new(format!("★ {:.1}/10", rating)).size(20.0).color(color));
+                            ui.label(
+                                RichText::new(format!("★ {:.1}/10", rating))
+                                    .size(20.0)
+                                    .color(color),
+                            );
                             if let Some(count) = movie.rating_count {
-                                ui.label(RichText::new(format!("({} votes / {} 票)", count, count)).size(12.0).color(dim));
+                                ui.label(
+                                    RichText::new(format!("({} votes / {} 票)", count, count))
+                                        .size(12.0)
+                                        .color(dim),
+                                );
                             }
                         });
                     }
@@ -101,13 +131,27 @@ impl MovieDetailPanel {
                     ui.add_space(8.0);
 
                     let mut info_items = Vec::new();
-                    if let Some(y) = movie.year { info_items.push(("Year / 年份", y.to_string())); }
-                    if let Some(r) = movie.runtime { info_items.push(("Runtime / 时长", format!("{} min", r))); }
-                    if let Some(ref res) = movie.resolution { info_items.push(("Resolution / 分辨率", res.clone())); }
-                    if let Some(ref src) = movie.source { info_items.push(("Source / 来源", src.clone())); }
-                    if let Some(ref codec) = movie.codec { info_items.push(("Codec / 编码", codec.clone())); }
-                    if let Some(ref lang) = movie.language { info_items.push(("Language / 语言", lang.to_uppercase())); }
-                    if let Some(ref dir) = movie.director { info_items.push(("Director / 导演", dir.clone())); }
+                    if let Some(y) = movie.year {
+                        info_items.push(("Year / 年份", y.to_string()));
+                    }
+                    if let Some(r) = movie.runtime {
+                        info_items.push(("Runtime / 时长", format!("{} min", r)));
+                    }
+                    if let Some(ref res) = movie.resolution {
+                        info_items.push(("Resolution / 分辨率", res.clone()));
+                    }
+                    if let Some(ref src) = movie.source {
+                        info_items.push(("Source / 来源", src.clone()));
+                    }
+                    if let Some(ref codec) = movie.codec {
+                        info_items.push(("Codec / 编码", codec.clone()));
+                    }
+                    if let Some(ref lang) = movie.language {
+                        info_items.push(("Language / 语言", lang.to_uppercase()));
+                    }
+                    if let Some(ref dir) = movie.director {
+                        info_items.push(("Director / 导演", dir.clone()));
+                    }
 
                     for (label, value) in &info_items {
                         super::widgets::info_row(ui, label, value);
@@ -115,7 +159,9 @@ impl MovieDetailPanel {
 
                     if let Some(ref file) = movie.local_file_path {
                         ui.add_space(4.0);
-                        ui.label(RichText::new(format!("File / 文件: {}", file)).size(11.0).color(dim));
+                        ui.label(
+                            RichText::new(format!("File / 文件: {}", file)).size(11.0).color(dim),
+                        );
                     }
                 });
             });
@@ -132,7 +178,9 @@ impl MovieDetailPanel {
             }
 
             if let Ok(Some(item)) = watchlist::get_watchlist_item_for_movie(db, movie.id) {
-                if let Some(workflow_note) = item.notes.as_deref().and_then(watchlist::extract_workflow_summary) {
+                if let Some(workflow_note) =
+                    item.notes.as_deref().and_then(watchlist::extract_workflow_summary)
+                {
                     ui.add_space(16.0);
                     super::widgets::section_header(ui, "Workflow Snapshot / 工作流摘要");
                     ui.label(
@@ -161,8 +209,12 @@ impl MovieDetailPanel {
                             ui.horizontal(|ui| {
                                 for member in &cast.iter().take(10) {
                                     ui.vertical(|ui| {
-                                        ui.label(RichText::new(&member.name).size(12.0).color(text));
-                                        ui.label(RichText::new(&member.character).size(11.0).color(dim));
+                                        ui.label(
+                                            RichText::new(&member.name).size(12.0).color(text),
+                                        );
+                                        ui.label(
+                                            RichText::new(&member.character).size(11.0).color(dim),
+                                        );
                                     });
                                     ui.add_space(20.0);
                                 }
@@ -186,7 +238,11 @@ impl MovieDetailPanel {
 
             if let Ok(subs) = sub_db::get_subtitles_for_movie(db, movie.id) {
                 if subs.is_empty() {
-                    ui.label(RichText::new("暂无已下载字幕 / No subtitles downloaded yet").size(13.0).color(dim));
+                    ui.label(
+                        RichText::new("暂无已下载字幕 / No subtitles downloaded yet")
+                            .size(13.0)
+                            .color(dim),
+                    );
                 } else {
                     for sub in &subs {
                         ui.horizontal(|ui| {

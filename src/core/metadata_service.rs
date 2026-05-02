@@ -1,3 +1,5 @@
+//! Metadata enrichment orchestration: TMDB lookups, file hashing, and DB persistence.
+
 use std::path::PathBuf;
 use rusqlite::Connection;
 use sha2::{Sha256, Digest};
@@ -9,6 +11,7 @@ use crate::db::models::*;
 use crate::db::movies;
 use crate::util::error::Result;
 
+/// Orchestrates metadata enrichment: directory scanning, TMDB lookup, and DB storage.
 pub struct MetadataService;
 
 impl MetadataService {

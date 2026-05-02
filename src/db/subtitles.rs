@@ -1,8 +1,11 @@
+//! Subtitle metadata storage and retrieval.
+
 use rusqlite::{params, Connection};
 use crate::util::error::Result;
 
 use super::models::Subtitle;
 
+/// Insert a subtitle record and return its ID.
 pub fn insert_subtitle(conn: &Connection, s: &Subtitle) -> Result<i64> {
     conn.execute(
         "INSERT INTO subtitles (movie_id, language, language_label, source, source_url, file_name,

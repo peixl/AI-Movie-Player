@@ -1,3 +1,8 @@
+//! AI-Movie-Player: An AI-native movie player for people who care about cinema.
+//!
+//! Built with Rust and egui, combining local library management, TMDB metadata,
+//! subtitles, poster-wall browsing, and OpenAI-compatible AI features.
+
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ai;

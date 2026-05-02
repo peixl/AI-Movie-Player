@@ -18,6 +18,64 @@ AI-Movie-Player is a desktop movie player and library companion built with Rust 
 
 This project is designed to feel more like a thoughtful film tool than a generic media utility. The AI is there to help you choose, understand, and revisit films naturally, not to dominate the product.
 
+## Tech Stack
+
+| Layer | Technology |
+| --- | --- |
+| Language | Rust (edition 2024, MSRV 1.85) |
+| GUI Framework | [egui](https://github.com/emilk/egui) / eframe 0.31 |
+| Async Runtime | [Tokio](https://tokio.rs) |
+| Database | [SQLite](https://sqlite.org) via rusqlite (WAL mode, FTS5) |
+| HTTP Client | [reqwest](https://github.com/seanmonstar/reqwest) (gzip, brotli, stream) |
+| Image | [image](https://github.com/image-rs/image) crate |
+| Error Handling | [thiserror](https://github.com/dtolnay/thiserror) + [anyhow](https://github.com/dtolnay/anyhow) |
+| CI/CD | GitHub Actions (multi-OS matrix) |
+
+## Architecture
+
+```mermaid
+graph TB
+    subgraph UI["UI Layer"]
+        App[app.rs]
+        Panels[ui/*.rs]
+        Layout[ui/layout.rs]
+    end
+
+    subgraph Domain["Domain + Services"]
+        AI[ai/*.rs]
+        Core[core/*.rs]
+        ApiClients[api/ai.rs + api/tmdb.rs]
+    end
+
+    subgraph Persistence["Persistence + Config"]
+        DB[db/*.rs]
+        Settings[config/settings.rs]
+        Thumbnails[thumbnail/cache.rs]
+    end
+
+    subgraph External["External Services"]
+        OpenAI[OpenAI-compatible APIs]
+        TMDB[TMDB API]
+        Filesystem[Local media library]
+    end
+
+    App --> Panels
+    App --> Layout
+    App --> Core
+    App --> DB
+    Panels --> AI
+    Panels --> ApiClients
+    Core --> ApiClients
+    Core --> DB
+    DB --> Settings
+    Panels --> Thumbnails
+    ApiClients --> OpenAI
+    ApiClients --> TMDB
+    Core --> Filesystem
+```
+
+The application entry point owns navigation and shared state in app.rs. UI panels stay focused on rendering and interaction, while domain services under src/core and src/ai handle library, metadata, subtitles, and AI workflows. Database access stays under src/db, and release automation is driven by the scripts directory plus GitHub Actions workflows.
+
 ## Why AI-Movie-Player
 
 - AI companion chat with real multi-turn memory for a selected film.
@@ -80,20 +138,6 @@ AI-Movie-Player now exposes a more deliberate viewing loop around a selected fil
 | Poster Wall | Browse visually with cached posters and a cleaner discovery flow. |
 | Watchlist | Keep track of what you want to watch next. |
 
-## Screenshot Plan
-
-Recommended homepage screenshot sequence:
-
-| Slot | What to capture | Why it matters |
-| --- | --- | --- |
-| 1 | Poster wall with a rich local library | Establishes the product as a serious desktop movie tool. |
-| 2 | AI Companion with a selected film | Shows the product is AI-native, not AI-badged. |
-| 3 | AI Taste Engine recommendations | Demonstrates library-aware intelligence. |
-| 4 | Movie detail page with metadata and AI entry | Connects browsing, metadata, and AI in one flow. |
-| 5 | Subtitle search and download workflow | Proves the app solves practical viewing problems too. |
-
-Detailed capture guidance lives in [docs/github-launch-kit.md](docs/github-launch-kit.md).
-
 ## Compared with a Typical Player
 
 | Capability | Typical Player | AI-Movie-Player |
@@ -108,7 +152,15 @@ Detailed capture guidance lives in [docs/github-launch-kit.md](docs/github-launc
 
 ## Getting Started
 
-### Requirements
+### Prebuilt Binaries
+
+Download the latest release for your platform from the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page:
+
+- **Windows**: `.zip` archive
+- **macOS**: `.tar.gz` containing an `.app` bundle
+- **Linux**: `.tar.gz` archive
+
+### Requirements (from source)
 
 - Rust 1.85+
 - A TMDB API key from [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
@@ -121,22 +173,6 @@ git clone https://github.com/peixl/AI-Movie-Player.git
 cd AI-Movie-Player
 cargo run --release
 ```
-
-### Releases
-
-Prebuilt Windows and macOS packages can be published on the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page.
-
-The repository now includes a dedicated release workflow for the two primary desktop targets:
-
-- Windows package: `.zip`
-- macOS package: `.tar.gz` containing an `.app` bundle
-
-The first formal release copy pack lives in [docs/release-package-v0.2.1.md](docs/release-package-v0.2.1.md).
-
-For local packaging after dependencies are available:
-
-- Windows: `pwsh ./scripts/package-windows.ps1`
-- macOS: `bash ./scripts/package-macos.sh`
 
 ## AI Setup
 
@@ -173,32 +209,106 @@ LM Studio -> http://localhost:1234/v1
 ```text
 ai-movie-player/
 ├── src/
-│   ├── main.rs
-│   ├── app.rs
-│   ├── ai/
+│   ├── main.rs                  # Entry point, Tokio runtime setup
+│   ├── app.rs                   # Central application struct (eframe::App)
+│   ├── ai/                      # AI prompt builders and workflow logic
 │   ├── api/
+│   │   ├── ai.rs                # OpenAI-compatible streaming client
+│   │   └── tmdb.rs              # TMDB API v3 client
 │   ├── core/
+│   │   ├── filename_parser.rs   # Extract metadata from filenames
+│   │   ├── file_organizer.rs    # File organization and renaming
+│   │   ├── library_manager.rs   # Library scanning and import
+│   │   ├── metadata_service.rs  # TMDB metadata enrichment
+│   │   └── subtitle_finder.rs   # Subtitle search coordination
 │   ├── db/
-│   ├── thumbnail/
+│   │   ├── connection.rs        # Database bootstrap and connection options
+│   │   ├── migrations.rs        # Schema migrations
+│   │   ├── models.rs            # Persistent data models
+│   │   ├── movies.rs            # Movie CRUD operations
+│   │   ├── settings.rs          # Settings key-value store
+│   │   ├── subtitles.rs         # Subtitle persistence helpers
+│   │   ├── watchlist.rs         # Watchlist persistence helpers
+│   │   └── tests.rs             # Database-focused tests
 │   ├── ui/
+│   │   ├── layout.rs            # Sidebar navigation and view routing
+│   │   ├── theme.rs             # Color system and theme helpers
+│   │   ├── icons.rs             # Procedural hand-drawn icon system
+│   │   ├── animation.rs         # Hover, shimmer, toast animations
+│   │   ├── poster_wall.rs       # Visual poster grid browsing
+│   │   ├── movie_detail.rs      # Movie detail panel with poster cache
+│   │   ├── ai_chat_panel.rs     # AI companion streaming chat
+│   │   ├── ai_recommend_panel.rs# AI taste engine recommendations
+│   │   ├── settings_panel.rs    # Settings and AI configuration
+│   │   ├── add_movie.rs         # Movie import workflow
+│   │   ├── subtitle_panel.rs    # Subtitle search and download
+│   │   ├── batch_ops.rs         # Batch operations
+│   │   ├── watchlist_panel.rs   # Watchlist management
+│   │   └── widgets.rs           # Shared UI widgets
 │   ├── config/
+│   │   └── settings.rs          # AppSettings model
+│   ├── thumbnail/
+│   │   └── cache.rs             # Poster and thumbnail cache helpers
 │   └── util/
-├── README.md
-├── readme-cn.md
-├── CONTRIBUTING.md
-└── CHANGELOG.md
+│       └── error.rs             # AppError types
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml               # CI: fmt, clippy, test, doc, package smoke
+│   │   ├── dependency-review.yml# PR dependency risk review
+│   │   ├── release.yml          # Release: multi-OS packaging + checksums
+│   │   ├── labeler.yml          # Auto-label PRs by file path
+│   │   └── stale.yml            # Auto-close stale issues
+│   ├── ISSUE_TEMPLATE/          # Bug report, feature request templates
+│   ├── PULL_REQUEST_TEMPLATE.md # PR checklist
+│   ├── CODEOWNERS               # Code ownership definitions
+│   └── dependabot.yml           # Automated dependency updates
+├── docs/                        # Launch kit, release notes
+├── scripts/                     # Packaging and cargo-network helpers
+├── Cargo.toml                   # Dependencies and metadata
+├── rustfmt.toml                 # Formatting configuration
+├── clippy.toml                  # Clippy lint configuration
+├── README.md                    # English documentation
+├── readme-cn.md                 # Chinese documentation
+├── CONTRIBUTING.md              # English contribution guide
+├── contributing-cn.md           # Chinese contribution guide
+├── CHANGELOG.md                 # English changelog
+├── changelog-cn.md              # Chinese changelog
+├── SECURITY.md                  # Security policy
+└── LICENSE                      # MIT License
 ```
+
+## Quality Gates
+
+The repository CI is designed around reproducibility and shipping confidence:
+
+- Format verification with rustfmt.
+- Linting with clippy under deny-warnings semantics.
+- Multi-platform test runs on Windows, macOS, and Linux.
+- Documentation build with rustdoc warnings treated as errors.
+- Cross-platform package smoke tests that reuse the same scripts as release packaging.
+- Dependency review on pull requests plus scheduled Dependabot updates.
 
 ## Development
 
 ```bash
-cargo test
-cargo fmt -- --check
-cargo clippy -- -D warnings
-cargo build --release
+cargo fmt --all -- --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+cargo doc --no-deps --locked
+cargo build --release --locked
 ```
 
 If your environment cannot reach crates.io, use local diagnostics or offline caches for validation when possible.
+
+For packaging smoke checks, use the same scripts that GitHub Actions uses:
+
+```bash
+./scripts/package-macos.sh
+./scripts/package-linux.sh
+pwsh ./scripts/package-windows.ps1
+```
+
+If your environment has intermittent Cargo registry access, the scripts directory also includes proxy helpers for running Cargo through a sparse-index relay on constrained networks.
 
 ## Documentation
 
@@ -208,9 +318,9 @@ If your environment cannot reach crates.io, use local diagnostics or offline cac
 - 中文贡献指南: [contributing-cn.md](contributing-cn.md)
 - Release history: [CHANGELOG.md](CHANGELOG.md)
 - 中文更新日志: [changelog-cn.md](changelog-cn.md)
+- Security policy: [SECURITY.md](SECURITY.md)
 - GitHub launch kit: [docs/github-launch-kit.md](docs/github-launch-kit.md)
 - GitHub 中文发布说明: [docs/github-launch-kit-cn.md](docs/github-launch-kit-cn.md)
-- Release package draft: [docs/release-package-v0.2.1.md](docs/release-package-v0.2.1.md)
 
 ## Roadmap
 
@@ -245,5 +355,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow, standards, and pull request
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Acknowledgments
+
+- [TMDB](https://www.themoviedb.org/) for movie metadata and poster API.
+- [egui](https://github.com/emilk/egui) for the immediate-mode GUI framework.
+- [OpenAI](https://openai.com) for the chat completions API standard adopted by the ecosystem.
+- The [Ollama](https://ollama.com) and [LM Studio](https://lmstudio.ai) communities for local AI tooling.
 
 Made with care by [ifq.ai](https://ifq.ai).

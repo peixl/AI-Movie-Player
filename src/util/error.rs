@@ -1,5 +1,8 @@
+//! Unified error types for the application.
+
 use thiserror::Error;
 
+/// Application-wide error enum covering network, database, API, and parsing failures.
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("Network error / 网络错误: {0}")]

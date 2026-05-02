@@ -1,9 +1,12 @@
+//! Settings panel for TMDB, AI provider, theme, and rename template configuration.
+
 use egui::{Color32, RichText, Ui};
 use rusqlite::Connection;
 
 use crate::config::settings::AppSettings;
 use crate::db::settings as db_settings;
 
+/// Settings panel state with editable fields for all configuration options.
 pub struct SettingsPanel {
     pub tmdb_key: String,
     pub language: String,
@@ -36,12 +39,11 @@ impl SettingsPanel {
     }
 
     pub fn show(&mut self, ui: &mut Ui, db: &Connection, is_dark: bool) {
-        let text = if is_dark { Color32::from_rgb(240, 240, 245) }
-            else { Color32::from_rgb(15, 15, 25) };
-        let dim = if is_dark { Color32::from_rgb(150, 150, 165) }
-            else { Color32::from_rgb(100, 100, 115) };
-        let primary = Color32::from_rgb(99, 102, 241);
+        let text = crate::ui::theme::text_color(is_dark);
+        let dim = crate::ui::theme::dim_color(is_dark);
+        let primary = crate::ui::theme::primary_color();
 
+        egui::ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
         ui.horizontal(|ui| {
             crate::ui::icons::draw_icon(ui, "gear", 22.0, primary);
             ui.add_space(8.0);
@@ -190,6 +192,7 @@ impl SettingsPanel {
             ui.add_space(8.0);
             ui.label(RichText::new("✓ 设置已保存 / Settings saved").color(Color32::from_rgb(52, 211, 153)));
         }
+        }); // close ScrollArea
     }
 
     fn save(&mut self, db: &Connection) {

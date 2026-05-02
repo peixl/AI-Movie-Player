@@ -1,3 +1,5 @@
+//! Library scanning, import, and duplicate detection.
+
 use std::path::PathBuf;
 use rusqlite::Connection;
 
@@ -6,8 +8,10 @@ use crate::core::{filename_parser, metadata_service::MetadataService};
 use crate::db::{movies, models::Movie};
 use crate::util::error::Result;
 
+/// Stateless library management operations.
 pub struct LibraryManager;
 
+/// Progress tracking for library scan operations.
 #[derive(Debug, Clone)]
 pub struct ScanProgress {
     pub total: usize,

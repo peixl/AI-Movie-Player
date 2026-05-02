@@ -202,14 +202,18 @@ impl AiClient {
         }
 
         let mut full_response = String::new();
+        let mut buffer = String::new();
         let mut stream = resp.bytes_stream();
 
         use futures_util::StreamExt;
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
-            let text = String::from_utf8_lossy(&chunk);
+            buffer.push_str(&String::from_utf8_lossy(&chunk));
 
-            for line in text.lines() {
+            while let Some(newline_pos) = buffer.find('\n') {
+                let line = buffer[..newline_pos].trim().to_string();
+                buffer = buffer[newline_pos + 1..].to_string();
+
                 if line.is_empty() || !line.starts_with("data: ") {
                     continue;
                 }

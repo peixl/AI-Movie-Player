@@ -1,5 +1,8 @@
+//! Batch operations panel for bulk library management.
+
 use egui::{Color32, ProgressBar, RichText, Ui};
 
+/// Batch operations panel state tracking scan progress and import results.
 pub struct BatchOpsPanel {
     pub scanning: bool,
     pub total_files: usize,

@@ -9,6 +9,9 @@ use crate::util::error::{AppError, Result};
 const BASE_URL: &str = "https://api.themoviedb.org/3";
 const IMAGE_BASE: &str = "https://image.tmdb.org/t/p";
 
+/// TMDB API v3 client for movie metadata, posters, and cast information.
+///
+/// Includes rate limiting via semaphore and minimum request interval.
 pub struct TmdbClient {
     api_key: String,
     language: String,

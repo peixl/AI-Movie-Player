@@ -1,3 +1,5 @@
+//! Movie import wizard: folder scanning, TMDB matching, and batch import.
+
 use egui::{Color32, RichText, Ui};
 use rusqlite::Connection;
 use std::path::PathBuf;
@@ -6,6 +8,7 @@ use crate::api::tmdb::TmdbClient;
 use crate::core::library_manager::LibraryManager;
 use crate::db::models::{Movie, TmdbSearchResult};
 
+/// Multi-step movie import wizard with folder scanning and TMDB matching.
 pub struct AddMovieWizard {
     pub state: WizardState,
     selected_folder: Option<PathBuf>,

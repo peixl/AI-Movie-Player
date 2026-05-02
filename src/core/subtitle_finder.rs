@@ -1,6 +1,9 @@
+//! Subtitle search coordination across multiple sources.
+
 use crate::db::models::{SubtitleQuery, SubtitleResult};
 use crate::util::error::{AppError, Result};
 
+/// Searches multiple subtitle sources (OpenSubtitles, assrt.net, zimuku).
 pub struct SubtitleFinder;
 
 impl SubtitleFinder {

@@ -1,9 +1,12 @@
+//! Subtitle search and download interface.
+
 use egui::{Color32, RichText, Ui};
 use rusqlite::Connection;
 
 use crate::db::models::SubtitleResult;
 use crate::db::{movies, subtitles as sub_db};
 
+/// Subtitle panel state for search, results, and download tracking.
 pub struct SubtitlePanel {
     pub movie_id: Option<i64>,
     pub search_results: Vec<SubtitleResult>,

@@ -1,3 +1,9 @@
+//! Schema migrations for SQLite database versioning.
+//!
+//! Each migration is a SQL statement that creates or alters tables.
+//! Migrations are tracked in the `_migrations` table and applied sequentially.
+
+/// Ordered list of SQL migration statements.
 pub const MIGRATIONS: &[&str] = &[
     // V1: Core tables
     r#"

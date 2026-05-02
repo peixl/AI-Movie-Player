@@ -1,5 +1,8 @@
+//! Reusable UI components: star ratings, badges, and common widgets.
+
 use egui::{Color32, Response, RichText, Rounding, Ui, Vec2};
 
+/// Render a star rating display (1-10 scale converted to 5 stars).
 pub fn star_rating(ui: &mut Ui, rating: f64, max_stars: usize) -> Response {
     let star_size = 14.0;
     let full_stars = (rating / 2.0).floor() as usize;

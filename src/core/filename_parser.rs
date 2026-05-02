@@ -1,3 +1,8 @@
+//! Extract movie metadata (title, year, resolution, codec, source) from filenames.
+//!
+//! Supports common naming conventions: standard scene names, episode-style,
+//! parenthesized titles, and underscore-separated names.
+
 use std::sync::LazyLock;
 
 use regex::Regex;

@@ -1,5 +1,6 @@
 use egui::{Color32, Rounding, Stroke, Style, Visuals};
 
+/// Color palette for dark and light themes.
 pub struct AppTheme {
     pub bg: Color32,
     pub surface: Color32,
@@ -78,6 +79,43 @@ pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     };
 
     ctx.set_style(egui_style);
+}
+
+/// Get the current theme based on dark mode flag.
+pub fn current_theme(is_dark: bool) -> &'static AppTheme {
+    if is_dark { &DARK_THEME } else { &LIGHT_THEME }
+}
+
+pub fn text_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) }
+}
+
+pub fn dim_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(150, 150, 165) } else { Color32::from_rgb(100, 100, 115) }
+}
+
+pub fn muted_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(120, 120, 130) } else { Color32::from_rgb(140, 140, 155) }
+}
+
+pub fn primary_color() -> Color32 {
+    Color32::from_rgb(99, 102, 241)
+}
+
+pub fn bg_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) }
+}
+
+pub fn success_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(6, 78, 59) } else { Color32::from_rgb(209, 250, 229) }
+}
+
+pub fn error_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(127, 29, 29) } else { Color32::from_rgb(254, 226, 226) }
+}
+
+pub fn surface_light_color(is_dark: bool) -> Color32 {
+    if is_dark { Color32::from_rgb(30, 41, 59) } else { Color32::from_rgb(224, 231, 255) }
 }
 
 pub fn rating_color(rating: f64) -> Color32 {

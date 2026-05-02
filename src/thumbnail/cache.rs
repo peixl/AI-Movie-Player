@@ -1,3 +1,5 @@
+//! Poster thumbnail download and disk caching.
+
 use std::path::PathBuf;
 
 use crate::api::tmdb::TmdbClient;
@@ -5,6 +7,7 @@ use crate::util::error::Result;
 
 const THUMBNAIL_WIDTH: u32 = 300;
 
+/// Get the local path for a cached thumbnail by TMDB ID.
 pub fn get_thumbnail_path(thumbnail_dir: &PathBuf, tmdb_id: i64) -> PathBuf {
     thumbnail_dir.join(format!("{}_thumb.jpg", tmdb_id))
 }

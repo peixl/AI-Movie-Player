@@ -1,8 +1,11 @@
+//! Movie CRUD operations, search, and filtering.
+
 use rusqlite::{params, Connection};
 use crate::util::error::Result;
 
 use super::models::*;
 
+/// Insert a new movie record and return its ID.
 pub fn insert_movie(conn: &Connection, m: &Movie) -> Result<i64> {
     conn.execute(
         "INSERT INTO movies (tmdb_id, imdb_id, title, title_cn, original_title, year, release_date,

@@ -1,7 +1,10 @@
+//! File organization and renaming using configurable templates.
+
 use std::path::{Path, PathBuf};
 
 use crate::db::models::Movie;
 
+/// A pending file rename operation.
 #[derive(Debug, Clone)]
 pub struct RenameOp {
     pub movie_id: i64,

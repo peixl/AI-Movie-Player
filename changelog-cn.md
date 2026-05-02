@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | 简体中文
 
+本文件记录项目的所有重要变更。
+
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+项目遵循 [语义化版本控制](https://semver.org/lang/zh-CN/)。
+
 ## [未发布]
 
 ### 新增
@@ -9,10 +14,26 @@
 - 新增 GitHub Issue 模板，覆盖缺陷、功能请求和 AI 工作流想法。
 - 新增 GitHub 发布面文档，整理 repo description、topics、release 文案、social preview 方向与截图规划。
 - 为贡献指南和更新日志补充独立中文文档。
+- 新增安全政策 (SECURITY.md)。
+- 新增 PR 模板（含检查清单）。
+- 新增按文件路径自动标记 PR 的工作流。
+- 新增过期 issue/PR 自动管理的工作流。
+- 新增 CODEOWNERS 文件定义代码所有权。
+- 新增 Linux 发布打包与 SHA256 校验和。
+- CI 中新增文档构建验证。
+- 新增 `rustfmt.toml` 和 `clippy.toml` 统一代码风格。
+- README 新增架构图（mermaid）。
+- README 新增技术栈章节。
+- README 新增致谢章节。
 
 ### 变更
 - 扩展 README 展示层，加入截图规划、功能对比、路线图、FAQ 和更强的 GitHub 首页结构。
 - 顶层读者文档改为按语言拆分维护，不再长期混排在同一个文件中。
+- 项目结构树新增文件描述。
+- CONTRIBUTING.md 增强：新增架构概览、提交规范、分支命名。
+- CI 工作流新增并发组、文档构建和依赖排序。
+- Release 工作流为所有产物生成 SHA256 校验和。
+- Cargo.toml 补充完整元数据：homepage、repository、license、keywords、categories、authors。
 
 ## [0.2.0] - 2026-05-02
 
@@ -52,3 +73,7 @@
 - 文件夹扫描与文件名解析。
 - 深浅色主题。
 - 片单、设置与批量操作。
+
+[未发布]: https://github.com/peixl/AI-Movie-Player/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/peixl/AI-Movie-Player/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/peixl/AI-Movie-Player/releases/tag/v0.1.0

@@ -1,5 +1,8 @@
+//! Database models for movies, subtitles, watchlist, and TMDB data.
+
 use serde::{Deserialize, Serialize};
 
+/// Full movie record with metadata, file info, and TMDB data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Movie {
     pub id: i64,
@@ -37,6 +40,7 @@ pub struct Movie {
     pub tmdb_data: Option<String>,
 }
 
+/// Lightweight movie summary for list views (poster wall, search results).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MovieSummary {
     pub id: i64,
@@ -51,6 +55,7 @@ pub struct MovieSummary {
     pub added_date: String,
 }
 
+/// Subtitle metadata associated with a movie.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Subtitle {
     pub id: i64,

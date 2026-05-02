@@ -1,0 +1,42 @@
+area:ai:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/ai/**
+          - src/api/ai.rs
+          - src/ui/ai_chat_panel.rs
+          - src/ui/ai_recommend_panel.rs
+
+area:ui:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/ui/**
+          - src/app.rs
+
+area:db:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/db/**
+
+area:api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/api/**
+
+area:config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - src/config/**
+          - Cargo.toml
+          - rustfmt.toml
+          - clippy.toml
+
+area:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - docs/**
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**

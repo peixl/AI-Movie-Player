@@ -6,7 +6,7 @@ use egui::{pos2, vec2, Color32, Pos2, Rect, Rounding, Shape, Stroke, Ui};
 
 /// Wobble offset for a point to create hand-drawn imperfection.
 /// Returns offset that varies with position to avoid repeating patterns.
-fn wobble(x: f32, y: f32, seed: f32) -> Pos2 {
+pub(crate) fn wobble(x: f32, y: f32, seed: f32) -> Pos2 {
     let wx = ((x * 3.7 + y * 1.3 + seed).sin() * 0.5
         + (x * 7.1 - y * 2.9 + seed * 1.7).sin() * 0.3
         + (x * 1.1 + y * 5.3 + seed * 3.1).sin() * 0.2)

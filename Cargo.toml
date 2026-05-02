@@ -3,7 +3,14 @@ name = "ai-movie-player"
 version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
+authors = ["ifq.ai"]
 description = "AI-native movie player / AI 原生电影播放器: cinematic chat, taste-aware recommendations, smart subtitles, metadata, poster wall — by ifq.ai"
+homepage = "https://ifq.ai"
+repository = "https://github.com/peixl/AI-Movie-Player"
+license = "MIT"
+readme = "README.md"
+keywords = ["movie-player", "ai", "egui", "tmdb", "desktop-app"]
+categories = ["multimedia", "gui"]
 
 [dependencies]
 # GUI
@@ -59,6 +66,13 @@ chrono = { version = "0.4", features = ["serde"] }
 sha2 = "0.10"
 tempfile = "3"
 url = "2"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
 
 [profile.release]
 opt-level = 3

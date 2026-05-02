@@ -37,6 +37,10 @@ enum ToastKind {
     Error,
 }
 
+/// Central application state, implements `eframe::App` for the main event loop.
+///
+/// Manages the database connection, AI/TMDB clients, UI panels, and library cache.
+/// Re-renders every frame via egui's immediate-mode paradigm.
 pub struct MovieBoxApp {
     // Core
     db: Connection,
@@ -57,6 +61,7 @@ pub struct MovieBoxApp {
     settings_panel: Option<SettingsPanel>,
     ai_chat_panel: AiChatPanel,
     ai_recommend_panel: AiRecommendPanel,
+    detail_panel: MovieDetailPanel,
 
     // Detail
     selected_movie: Option<Movie>,
@@ -68,6 +73,11 @@ pub struct MovieBoxApp {
     // Notifications
     toasts: Vec<Toast>,
     last_view: View,
+
+    // Cached data (avoid per-frame DB queries)
+    cached_movie_count: i64,
+    cached_library: Vec<Movie>,
+    library_dirty: bool,
 }
 
 impl MovieBoxApp {
@@ -113,6 +123,7 @@ impl MovieBoxApp {
         let movie_count = movies::get_movie_count(&db).unwrap_or(0);
         log::info!("Library: {} movies loaded", movie_count);
 
+        let cached_library = movies::get_all_movies(&db).unwrap_or_default();
         let runtime = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
 
         Self {
@@ -127,6 +138,7 @@ impl MovieBoxApp {
             settings_panel: None,
             ai_chat_panel: AiChatPanel::new(),
             ai_recommend_panel: AiRecommendPanel::new(),
+            detail_panel: MovieDetailPanel::new(),
             selected_movie: None,
             show_detail: false,
             pending_import: None,
@@ -137,60 +149,79 @@ impl MovieBoxApp {
             runtime,
             toasts: Vec::new(),
             last_view: View::Library,
+            cached_movie_count: movie_count,
+            cached_library,
+            library_dirty: false,
         }
     }
-}
 
-impl MovieBoxApp {
+    fn refresh_library_cache(&mut self) {
+        self.cached_movie_count = movies::get_movie_count(&self.db).unwrap_or(0);
+        self.cached_library = movies::get_all_movies(&self.db).unwrap_or_default();
+        self.library_dirty = false;
+    }
+
+    fn close_detail(&mut self) {
+        self.show_detail = false;
+        self.selected_movie = None;
+        self.poster_wall.selected_id = None;
+    }
+
+    fn navigate_to(&mut self, view: View) {
+        self.layout.active_view = view;
+        self.close_detail();
+    }
+
+    fn open_detail(&mut self, movie: Movie) {
+        self.layout.active_view = View::Library;
+        self.selected_movie = Some(movie);
+        self.show_detail = true;
+    }
+
     fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
         let input = ctx.input(|i| i.clone());
 
         // Ctrl+1..6 to switch views
         if input.modifiers.ctrl {
             if input.key_pressed(egui::Key::Num1) || input.key_pressed(egui::Key::Key1) {
-                self.layout.active_view = View::Library;
-                self.show_detail = false;
+                self.navigate_to(View::Library);
             }
             if input.key_pressed(egui::Key::Num2) || input.key_pressed(egui::Key::Key2) {
-                self.layout.active_view = View::AddMovie;
+                self.navigate_to(View::AddMovie);
             }
             if input.key_pressed(egui::Key::Num3) || input.key_pressed(egui::Key::Key3) {
-                self.layout.active_view = View::SubtitleSearch;
+                self.navigate_to(View::SubtitleSearch);
             }
             if input.key_pressed(egui::Key::Num4) || input.key_pressed(egui::Key::Key4) {
-                self.layout.active_view = View::BatchOps;
+                self.navigate_to(View::BatchOps);
             }
             if input.key_pressed(egui::Key::Num5) || input.key_pressed(egui::Key::Key5) {
-                self.layout.active_view = View::Watchlist;
+                self.navigate_to(View::Watchlist);
             }
             if input.key_pressed(egui::Key::Num6) || input.key_pressed(egui::Key::Key6) {
-                self.layout.active_view = View::Settings;
+                self.navigate_to(View::Settings);
             }
             if input.key_pressed(egui::Key::Num7) || input.key_pressed(egui::Key::Key7) {
-                self.layout.active_view = View::AiChat;
+                self.navigate_to(View::AiChat);
             }
             if input.key_pressed(egui::Key::Num8) || input.key_pressed(egui::Key::Key8) {
-                self.layout.active_view = View::AiRecommend;
+                self.navigate_to(View::AiRecommend);
             }
             if input.key_pressed(egui::Key::F) {
-                self.layout.active_view = View::Library;
-                self.show_detail = false;
+                self.navigate_to(View::Library);
             }
         }
 
         // Escape to go back from detail or to library
         if input.key_pressed(egui::Key::Escape) {
             if self.show_detail {
-                self.show_detail = false;
-                self.poster_wall.selected_id = None;
+                self.close_detail();
             } else {
-                self.layout.active_view = View::Library;
+                self.navigate_to(View::Library);
             }
         }
     }
-}
 
-impl MovieBoxApp {
     fn push_toast(&mut self, message: impl Into<String>, kind: ToastKind) {
         self.toasts.push(Toast {
             message: message.into(),
@@ -225,9 +256,9 @@ impl MovieBoxApp {
             };
 
             let (bg, icon) = match toast.kind {
-                ToastKind::Success => (Color32::from_rgb(6, 78, 59), "✓"),
-                ToastKind::Error => (Color32::from_rgb(127, 29, 29), "✗"),
-                ToastKind::Info => (Color32::from_rgb(30, 41, 59), "ℹ"),
+                ToastKind::Success => (crate::ui::theme::success_color(self.is_dark), "✓"),
+                ToastKind::Error => (crate::ui::theme::error_color(self.is_dark), "✗"),
+                ToastKind::Info => (crate::ui::theme::surface_light_color(self.is_dark), "ℹ"),
             };
 
             egui::Area::new(egui::Id::new(format!("toast_{}", i)))
@@ -334,10 +365,14 @@ impl eframe::App for MovieBoxApp {
         if let Some(movie_id) = self.poster_wall.selected_id {
             if self.layout.active_view == View::Library {
                 if let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id) {
-                    self.selected_movie = Some(movie);
-                    self.show_detail = true;
+                    self.open_detail(movie);
                 }
             }
+        }
+
+        // --- Refresh cached data if dirty ---
+        if self.library_dirty {
+            self.refresh_library_cache();
         }
 
         // --- Sidebar ---
@@ -346,8 +381,9 @@ impl eframe::App for MovieBoxApp {
             .default_width(200.0)
             .min_width(180.0)
             .show(ctx, |ui| {
-                let movie_count = movies::get_movie_count(&self.db).unwrap_or(0);
-                self.layout.show_sidebar(ui, ctx, self.is_dark, movie_count);
+                if let Some(view) = self.layout.show_sidebar(ui, ctx, self.is_dark, self.cached_movie_count) {
+                    self.navigate_to(view);
+                }
             });
 
         // --- Content ---
@@ -358,23 +394,22 @@ impl eframe::App for MovieBoxApp {
                         if let Some(ref movie) = self.selected_movie {
                             ui.horizontal(|ui| {
                                 if ui.button("← 返回 / Back").clicked() {
-                                    self.show_detail = false;
-                                    self.poster_wall.selected_id = None;
+                                    self.close_detail();
                                 }
                                 ui.heading(&movie.title);
                             });
                             ui.add_space(4.0);
                             let movie_clone = movie.clone();
-                            let detail_action = MovieDetailPanel::show(ui, &movie_clone, &self.db, self.is_dark);
+                            let detail_action = self.detail_panel.show(ui, &movie_clone, &self.db, self.is_dark);
 
                             match detail_action {
                                 crate::ui::movie_detail::DetailAction::AiAnalyze => {
                                     self.ai_chat_panel.select_movie(Some(movie_clone));
-                                    self.layout.active_view = View::AiChat;
+                                    self.navigate_to(View::AiChat);
                                 }
                                 crate::ui::movie_detail::DetailAction::SearchSubtitles => {
                                     self.subtitle_panel.select_movie(movie.id);
-                                    self.layout.active_view = View::SubtitleSearch;
+                                    self.navigate_to(View::SubtitleSearch);
                                 }
                                 _ => {}
                             }
@@ -422,6 +457,7 @@ impl eframe::App for MovieBoxApp {
                         self.add_wizard.state = WizardState::Done;
                         // Refresh poster wall
                         self.poster_wall.mark_dirty();
+                        self.library_dirty = true;
                     }
 
                     self.add_wizard.show(
@@ -523,29 +559,23 @@ impl eframe::App for MovieBoxApp {
                 }
 
                 View::AiChat => {
-                    let library = match movies::get_all_movies(&self.db) {
-                        Ok(m) => m,
-                        Err(_) => Vec::new(),
-                    };
-                    self.ai_chat_panel.show(
+                    if self.ai_chat_panel.show(
                         ui,
                         &self.db,
                         &self.ai_client,
-                        &library,
+                        &self.cached_library,
                         &self.runtime,
                         self.is_dark,
-                    );
+                    ) {
+                        self.navigate_to(View::Settings);
+                    }
                 }
 
                 View::AiRecommend => {
-                    let library = match movies::get_all_movies(&self.db) {
-                        Ok(m) => m,
-                        Err(_) => Vec::new(),
-                    };
                     self.ai_recommend_panel.show(
                         ui,
                         &self.ai_client,
-                        &library,
+                        &self.cached_library,
                         &self.runtime,
                         self.is_dark,
                     );
@@ -559,7 +589,6 @@ impl eframe::App for MovieBoxApp {
         // Footer status bar
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let movie_count = movies::get_movie_count(&self.db).unwrap_or(0);
                 let tmdb_status = if !self.settings.tmdb_api_key.is_empty() {
                     "TMDB ✓"
                 } else {
@@ -567,7 +596,7 @@ impl eframe::App for MovieBoxApp {
                 };
                 ui.label(format!(
                     "AI-Movie-Player | {} movies | {} | ifq.ai",
-                    movie_count, tmdb_status
+                    self.cached_movie_count, tmdb_status
                 ));
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {

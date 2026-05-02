@@ -1,6 +1,9 @@
+//! Key-value settings store for application configuration.
+
 use rusqlite::{params, Connection};
 use crate::util::error::Result;
 
+/// Retrieve a setting value by key. Returns `None` if the key doesn't exist.
 pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
     let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1")?;
     let result = stmt.query_row(params![key], |row| row.get::<_, String>(0));

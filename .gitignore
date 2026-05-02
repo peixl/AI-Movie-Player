@@ -11,6 +11,9 @@
 
 # Rust
 *.rs.bk
+*.d
+*.pdb
+*.profraw
 
 # Environment
 .env

@@ -1,3 +1,5 @@
+//! Watchlist management with workflow card storage in notes field.
+
 use rusqlite::{params, Connection};
 use crate::util::error::Result;
 
@@ -6,6 +8,7 @@ use super::models::{Movie, WatchlistItem};
 const WORKFLOW_BLOCK_START: &str = "[AI-Movie-Player Workflow Studio]";
 const WORKFLOW_BLOCK_END: &str = "[/AI-Movie-Player Workflow Studio]";
 
+/// Add a movie to the watchlist and return the new entry ID.
 pub fn add_to_watchlist(conn: &Connection, item: &WatchlistItem) -> Result<i64> {
     conn.execute(
         "INSERT INTO watchlist (movie_id, tmdb_id, status, user_rating, notes, watched_date)

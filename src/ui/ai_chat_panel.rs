@@ -273,6 +273,7 @@ impl AiChatPanel {
         }
     }
 
+    /// Returns true if user wants to navigate to settings.
     pub fn show(
         &mut self,
         ui: &mut egui::Ui,
@@ -281,7 +282,8 @@ impl AiChatPanel {
         library: &[Movie],
         runtime: &tokio::runtime::Runtime,
         is_dark: bool,
-    ) {
+    ) -> bool {
+        let mut navigate_settings = false;
         let text = if is_dark {
             Color32::from_rgb(240, 240, 245)
         } else {
@@ -347,6 +349,18 @@ impl AiChatPanel {
                 .size(12.0)
                 .color(dim),
             );
+            if !is_ready {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let btn = egui::Button::new(
+                        RichText::new("Open Settings / 打开设置").size(12.0).color(Color32::WHITE),
+                    )
+                    .fill(primary)
+                    .rounding(Rounding::same(6.0));
+                    if ui.add(btn).clicked() {
+                        navigate_settings = true;
+                    }
+                });
+            }
         });
         ui.add_space(8.0);
         ui.separator();
@@ -721,6 +735,8 @@ impl AiChatPanel {
                 self.send_message(client, message, self.selected_movie.clone(), runtime);
             }
         });
+
+        navigate_settings
     }
 
     fn send_message(
@@ -759,11 +775,16 @@ impl AiChatPanel {
 
         runtime.spawn(async move {
             let mut full = String::new();
+            let mut last_update_len: usize = 0;
             let result = if let Some(ref m) = movie_clone {
                 chat::stream_chat(&client, m, &conversation_history, &message, |token| {
                     full.push_str(token);
-                    let mut s = status.lock().unwrap();
-                    *s = StreamStatus::Streaming(full.clone());
+                    // Only update shared state every ~80 chars to reduce clone overhead
+                    if full.len() - last_update_len >= 80 {
+                        last_update_len = full.len();
+                        let mut s = status.lock().unwrap();
+                        *s = StreamStatus::Streaming(full.clone());
+                    }
                 })
                 .await
             } else {
@@ -774,22 +795,26 @@ impl AiChatPanel {
                 client
                     .chat_stream(&messages, |token| {
                         full.push_str(token);
-                        let mut s = status.lock().unwrap();
-                        *s = StreamStatus::Streaming(full.clone());
+                        if full.len() - last_update_len >= 80 {
+                            last_update_len = full.len();
+                            let mut s = status.lock().unwrap();
+                            *s = StreamStatus::Streaming(full.clone());
+                        }
                     })
                     .await
             };
 
-            match result {
-                Ok(resp) => {
-                    let mut s = status.lock().unwrap();
-                    *s = StreamStatus::Done(resp);
-                }
+            // Always send the final accumulated content
+            let final_content = match result {
+                Ok(resp) => resp,
                 Err(e) => {
                     let mut s = status.lock().unwrap();
                     *s = StreamStatus::Error(format!("{}", e));
+                    return;
                 }
-            }
+            };
+            let mut s = status.lock().unwrap();
+            *s = StreamStatus::Done(final_content);
         });
     }
 

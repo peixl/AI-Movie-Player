@@ -1,0 +1,16 @@
+# Default owner for everything
+* @peixl
+
+# CI/CD workflows
+.github/ @peixl
+
+# Core AI functionality
+src/ai/ @peixl
+src/api/ai.rs @peixl
+
+# Database layer
+src/db/ @peixl
+
+# UI components
+src/ui/ @peixl
+src/app.rs @peixl
