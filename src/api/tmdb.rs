@@ -23,7 +23,6 @@ pub struct TmdbClient {
 #[derive(Debug, Deserialize)]
 struct TmdbSearchResponse {
     results: Vec<TmdbRawResult>,
-    total_results: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -128,7 +127,7 @@ impl TmdbClient {
         }
 
         let resp =
-            self.client.get(&format!("{}/search/movie", BASE_URL)).query(&params).send().await?;
+            self.client.get(format!("{}/search/movie", BASE_URL)).query(&params).send().await?;
 
         if !resp.status().is_success() {
             return Err(AppError::TmdbApi {
@@ -164,7 +163,7 @@ impl TmdbClient {
 
         let resp = self
             .client
-            .get(&format!("{}/movie/{}", BASE_URL, tmdb_id))
+            .get(format!("{}/movie/{}", BASE_URL, tmdb_id))
             .query(&[
                 ("api_key", self.api_key.as_str()),
                 ("language", &self.language),
@@ -187,7 +186,7 @@ impl TmdbClient {
             self.wait_rate_limit().await;
             let cn_resp = self
                 .client
-                .get(&format!("{}/movie/{}", BASE_URL, tmdb_id))
+                .get(format!("{}/movie/{}", BASE_URL, tmdb_id))
                 .query(&[("api_key", self.api_key.as_str()), ("language", "zh-CN")])
                 .send()
                 .await?;
@@ -265,7 +264,7 @@ impl TmdbClient {
     pub async fn download_poster(&self, poster_path: &str, size: &str) -> Result<Vec<u8>> {
         let url = Self::poster_url(poster_path, size);
         self.wait_rate_limit().await;
-        let resp = self.client.get(&url).send().await?;
+        let resp = self.client.get(url).send().await?;
         if !resp.status().is_success() {
             return Err(AppError::TmdbApi {
                 code: resp.status().as_u16(),

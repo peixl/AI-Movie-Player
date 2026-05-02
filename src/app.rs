@@ -331,7 +331,6 @@ impl eframe::App for MovieBoxApp {
             self.add_wizard.state = WizardState::SearchingTMDB;
 
             let client = self.tmdb_client.clone();
-            let found_count = files.len();
 
             self.runtime.spawn(async move {
                 let mut search_results = Vec::new();
@@ -357,8 +356,6 @@ impl eframe::App for MovieBoxApp {
                 // Results are stored via a channel or mutable state;
                 // for now we handle this through the wizard state machine
             });
-
-            self.add_wizard.set_found(found_count);
         }
 
         // Handle poster wall selection → show detail

@@ -162,14 +162,14 @@ pub async fn chat_about_movie(
     user_message: &str,
 ) -> Result<String> {
     let system = build_movie_context(movie);
-    let messages = vec![ChatMessage::system(&system), ChatMessage::user(user_message)];
+    let messages = vec![ChatMessage::system(system), ChatMessage::user(user_message)];
     client.chat(&messages).await
 }
 
 /// Get a quick AI insight about a movie using a preset prompt
 pub async fn quick_insight(client: &AiClient, movie: &Movie, prompt: &str) -> Result<String> {
     let system = build_movie_context(movie);
-    let messages = vec![ChatMessage::system(&system), ChatMessage::user(prompt)];
+    let messages = vec![ChatMessage::system(system), ChatMessage::user(prompt)];
     client.chat(&messages).await
 }
 
@@ -182,7 +182,7 @@ pub async fn stream_chat(
     on_token: impl FnMut(&str),
 ) -> Result<String> {
     let system = build_movie_context(movie);
-    let mut messages = vec![ChatMessage::system(&system)];
+    let mut messages = vec![ChatMessage::system(system)];
     messages.extend_from_slice(history);
     messages.push(ChatMessage::user(user_message));
 

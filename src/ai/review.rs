@@ -8,7 +8,7 @@ use crate::util::error::Result;
 pub async fn generate_review(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请用中英双语写一篇结构清晰、判断鲜明的电影短评。包括：\n\
              1. 一句高概括结论 / one-line verdict\n\
@@ -26,7 +26,7 @@ pub async fn generate_review(client: &AiClient, movie: &Movie) -> Result<String>
 pub async fn quick_verdict(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请用中英双语给我一个快速判断，格式如下：\n\
              **One-liner / 一句话：** ...\n\
@@ -42,7 +42,7 @@ pub async fn quick_verdict(client: &AiClient, movie: &Movie) -> Result<String> {
 pub async fn generate_trivia(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请用中英双语分享 8 条真正有信息密度的幕后细节、制作秘密、选角逸闻或彩蛋。\
              Number them, and avoid obvious trivia the user could get from a surface-level summary.",
@@ -71,7 +71,7 @@ pub async fn compare_movies(client: &AiClient, movie_a: &Movie, movie_b: &Movie)
         movie_b.overview.as_deref().unwrap_or("N/A"),
     );
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "Compare these two films. Which is better and why? \
              What do they have in common? How do they differ in style, theme, and execution? \

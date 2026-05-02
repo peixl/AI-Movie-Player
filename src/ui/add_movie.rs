@@ -14,7 +14,6 @@ pub struct AddMovieWizard {
     selected_folder: Option<PathBuf>,
     found_files: Vec<PathBuf>,
     search_results: Vec<(PathBuf, Vec<TmdbSearchResult>)>,
-    found_count: usize,
     imported_movies: Vec<Movie>,
     log_messages: Vec<String>,
 }
@@ -37,7 +36,6 @@ impl AddMovieWizard {
             selected_folder: None,
             found_files: Vec::new(),
             search_results: Vec::new(),
-            found_count: 0,
             imported_movies: Vec::new(),
             log_messages: Vec::new(),
         }
@@ -219,12 +217,7 @@ impl AddMovieWizard {
             let path_str = f.to_string_lossy().to_string();
             !crate::db::movies::movie_exists_by_path(db, &path_str).unwrap_or(false)
         });
-        self.found_count = self.found_files.len();
         self.state = WizardState::Scanning;
-    }
-
-    pub fn set_found(&mut self, count: usize) {
-        self.found_count = count;
     }
 
     pub fn get_found_files(&self) -> &[PathBuf] {

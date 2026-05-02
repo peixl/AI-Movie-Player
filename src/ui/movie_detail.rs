@@ -208,7 +208,7 @@ impl MovieDetailPanel {
                         super::widgets::section_header(ui, "Cast / 演员阵容");
                         egui::ScrollArea::horizontal().show(ui, |ui| {
                             ui.horizontal(|ui| {
-                                for member in &cast.iter().take(10) {
+                                for member in cast.iter().take(10) {
                                     ui.vertical(|ui| {
                                         ui.label(
                                             RichText::new(&member.name).size(12.0).color(text),

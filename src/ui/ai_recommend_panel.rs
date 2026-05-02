@@ -136,11 +136,11 @@ impl AiRecommendPanel {
                 runtime,
                 is_dark,
                 |client, library| {
-                    let system = recommend::build_library_context(&library, &[]);
+                    let system = recommend::build_library_context(library, &[]);
                     let msg = "Based on my movie library, suggest 5 films I should watch next from my own collection. \
                               For each: explain why it fits my taste. Format: **Title** (Year) — Why watch it now.";
                     Box::pin(async move {
-                        client.ask(&system, msg).await.map_err(|e| format!("{}", e))
+                        client.ask(&system, msg).await.map_err(|e| e.to_string())
                     })
                 },
             );
@@ -156,12 +156,12 @@ impl AiRecommendPanel {
                 runtime,
                 is_dark,
                 |client, library| {
-                    let system = recommend::build_library_context(&library, &[]);
+                    let system = recommend::build_library_context(library, &[]);
                     let msg = "Analyze my movie taste profile. What genres do I love? What directors? \
                               What era? What does my collection reveal about my personality? \
                               Be specific and reference actual films in my library. Make it fun.";
                     Box::pin(async move {
-                        client.ask(&system, msg).await.map_err(|e| format!("{}", e))
+                        client.ask(&system, msg).await.map_err(|e| e.to_string())
                     })
                 },
             );
@@ -181,12 +181,12 @@ impl AiRecommendPanel {
             runtime,
             is_dark,
             |client, library| {
-                let system = recommend::build_library_context(&library, &[]);
+                let system = recommend::build_library_context(library, &[]);
                 let msg = "Based on my library, recommend 8 real films I DON'T own but would absolutely love. \
                           Include a mix of classics and hidden gems. \
                           Format: **Title** (Year) — Director — Why you'll love it.";
                 Box::pin(async move {
-                    client.ask(&system, msg).await.map_err(|e| format!("{}", e))
+                    client.ask(&system, msg).await.map_err(|e| e.to_string())
                 })
             },
         );

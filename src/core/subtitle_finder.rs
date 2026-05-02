@@ -120,7 +120,7 @@ impl SubtitleFinder {
         let mut results: Vec<SubtitleResult> = raw
             .into_iter()
             .map(|s| {
-                let lang_code = s.iso639.clone().unwrap_or_else(|| "en".into());
+                let lang_code = s.iso639.unwrap_or_else(|| "en".into());
                 SubtitleResult {
                     title: s.file_name.clone().unwrap_or_default(),
                     language: lang_code.clone(),
@@ -164,9 +164,9 @@ impl SubtitleFinder {
             .header("User-Agent", "AI-Movie-Player/0.2 (ifq.ai)")
             .send()
             .await
-            .map_err(|e| AppError::Network(e))?;
+            .map_err(AppError::Network)?;
 
-        let bytes = resp.bytes().await.map_err(|e| AppError::Network(e))?;
+        let bytes = resp.bytes().await.map_err(AppError::Network)?;
 
         // Check if it's a zip
         if url.ends_with(".zip") || bytes.starts_with(b"PK") {

@@ -46,7 +46,7 @@ pub fn build_library_context(library: &[Movie], watchlist: &[String]) -> String 
 pub async fn recommend_from_library(client: &AiClient, library: &[Movie]) -> Result<String> {
     let system = build_library_context(library, &[]);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请基于我的片库，用中英双语推荐 5 部我现在最该看的馆藏影片。\
              For each pick, include: why it matches my taste, the mood or moment it suits, and what kind of attention it rewards.\
@@ -60,7 +60,7 @@ pub async fn recommend_from_library(client: &AiClient, library: &[Movie]) -> Res
 pub async fn discover_new(client: &AiClient, library: &[Movie]) -> Result<String> {
     let system = build_library_context(library, &[]);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请基于我的片库，用中英双语推荐 8 部我还没收藏、但大概率会喜欢的真实电影。\
              For each: title, year, director, why it fits me, and whether it is a comfort pick, stretch pick, or surprise pick.\
@@ -74,7 +74,7 @@ pub async fn discover_new(client: &AiClient, library: &[Movie]) -> Result<String
 pub async fn taste_profile(client: &AiClient, library: &[Movie]) -> Result<String> {
     let system = build_library_context(library, &[]);
     let messages = vec![
-        ChatMessage::system(&system),
+        ChatMessage::system(system),
         ChatMessage::user(
             "请基于我的片库，用中英双语输出一份高级但自然的观影品味画像。\
              Cover my dominant genres, directors, eras, emotional preferences, and blind spots.\

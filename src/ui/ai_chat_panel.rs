@@ -804,7 +804,7 @@ impl AiChatPanel {
                 Ok(resp) => resp,
                 Err(e) => {
                     let mut s = status.lock().unwrap();
-                    *s = StreamStatus::Error(format!("{}", e));
+                    *s = StreamStatus::Error(e.to_string());
                     return;
                 }
             };
@@ -1099,7 +1099,7 @@ impl AiChatPanel {
                 }
                 Err(err) => {
                     *workflow_status.lock().unwrap() =
-                        WorkflowStatus::Error(Some(kind), format!("{}", err));
+                        WorkflowStatus::Error(Some(kind), err.to_string());
                 }
             }
         });

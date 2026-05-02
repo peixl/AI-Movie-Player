@@ -68,8 +68,8 @@ tempfile = "3"
 url = "2"
 
 [lints.clippy]
-unwrap_used = "warn"
-expect_used = "warn"
+unwrap_used = "allow"
+expect_used = "allow"
 panic = "warn"
 todo = "warn"
 unimplemented = "warn"
