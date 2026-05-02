@@ -16,7 +16,7 @@ categories = ["multimedia", "gui"]
 # GUI
 eframe = "0.31"
 egui = "0.31"
-egui_extras = { version = "0.31", features = ["all_loaders"] }
+egui_extras = { version = "0.32", features = ["all_loaders"] }
 
 # Async
 tokio = { version = "1", features = ["full"] }
