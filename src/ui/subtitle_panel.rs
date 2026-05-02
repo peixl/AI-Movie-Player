@@ -26,16 +26,14 @@ impl SubtitlePanel {
         }
     }
 
-    pub fn show(
-        &mut self,
-        ui: &mut Ui,
-        db: &Connection,
-        is_dark: bool,
-    ) {
-        let text = if is_dark { Color32::from_rgb(240, 240, 245) }
-            else { Color32::from_rgb(15, 15, 25) };
-        let dim = if is_dark { Color32::from_rgb(150, 150, 165) }
-            else { Color32::from_rgb(100, 100, 115) };
+    pub fn show(&mut self, ui: &mut Ui, db: &Connection, is_dark: bool) {
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
+        let dim = if is_dark {
+            Color32::from_rgb(150, 150, 165)
+        } else {
+            Color32::from_rgb(100, 100, 115)
+        };
 
         let primary = Color32::from_rgb(99, 102, 241);
 
@@ -49,22 +47,31 @@ impl SubtitlePanel {
         // Movie info
         if let Some(mid) = self.movie_id {
             if let Ok(Some(movie)) = movies::get_movie_by_id(db, mid) {
-                ui.label(RichText::new(format!("Movie / 影片: {} ({})",
-                    movie.title,
-                    movie.year.map_or("?".into(), |y| y.to_string())
-                )).size(14.0).color(text));
+                ui.label(
+                    RichText::new(format!(
+                        "Movie / 影片: {} ({})",
+                        movie.title,
+                        movie.year.map_or("?".into(), |y| y.to_string())
+                    ))
+                    .size(14.0)
+                    .color(text),
+                );
 
                 // Show existing subtitles
                 if let Ok(existing) = sub_db::get_subtitles_for_movie(db, mid) {
                     if !existing.is_empty() {
                         ui.add_space(8.0);
-                        ui.label(RichText::new("Already downloaded / 已下载:").size(12.0).color(dim));
+                        ui.label(
+                            RichText::new("Already downloaded / 已下载:").size(12.0).color(dim),
+                        );
                         for sub in &existing {
                             ui.horizontal(|ui| {
-                                ui.label(format!("  {} {} - {}",
+                                ui.label(format!(
+                                    "  {} {} - {}",
                                     sub.language,
                                     sub.format.as_deref().unwrap_or("?"),
-                                    sub.source));
+                                    sub.source
+                                ));
                             });
                         }
                     }
@@ -75,7 +82,8 @@ impl SubtitlePanel {
         ui.add_space(16.0);
 
         // Search trigger
-        if ui.button(RichText::new("🔍 Search All Sources / 搜索全部来源").size(14.0)).clicked() {
+        if ui.button(RichText::new("🔍 Search All Sources / 搜索全部来源").size(14.0)).clicked()
+        {
             self.searching = true;
             self.search_results.clear();
         }
@@ -90,7 +98,11 @@ impl SubtitlePanel {
 
         // Results
         if !self.search_results.is_empty() {
-            ui.label(format!("找到 {} 条字幕结果 / Found {} subtitles:", self.search_results.len(), self.search_results.len()));
+            ui.label(format!(
+                "找到 {} 条字幕结果 / Found {} subtitles:",
+                self.search_results.len(),
+                self.search_results.len()
+            ));
             ui.add_space(4.0);
 
             for result in &self.search_results {
@@ -102,7 +114,9 @@ impl SubtitlePanel {
                             ui.label(format!("★{:.1}", rating));
                         }
                         if result.is_ai {
-                            ui.label(RichText::new("AI 优选").color(Color32::from_rgb(251, 146, 60)));
+                            ui.label(
+                                RichText::new("AI 优选").color(Color32::from_rgb(251, 146, 60)),
+                            );
                         }
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui.button("Download / 下载").clicked() {

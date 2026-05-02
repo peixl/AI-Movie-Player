@@ -1,7 +1,7 @@
 //! Movie CRUD operations, search, and filtering.
 
-use rusqlite::{params, Connection};
 use crate::util::error::Result;
+use rusqlite::{Connection, params};
 
 use super::models::*;
 
@@ -69,7 +69,7 @@ pub fn get_all_movie_summaries(
     search: Option<&str>,
 ) -> Result<Vec<MovieSummary>> {
     let mut sql = String::from(
-        "SELECT id, title, title_cn, year, poster_local, poster_path, rating, genres, resolution, added_date FROM movies WHERE 1=1"
+        "SELECT id, title, title_cn, year, poster_local, poster_path, rating, genres, resolution, added_date FROM movies WHERE 1=1",
     );
 
     let mut param_values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
@@ -122,7 +122,8 @@ pub fn get_all_movie_summaries(
     sql.push_str(&format!(" ORDER BY {} {}", order, dir));
 
     let mut stmt = conn.prepare(&sql)?;
-    let params_refs: Vec<&dyn rusqlite::types::ToSql> = param_values.iter().map(|p| p.as_ref()).collect();
+    let params_refs: Vec<&dyn rusqlite::types::ToSql> =
+        param_values.iter().map(|p| p.as_ref()).collect();
     let rows = stmt.query_map(params_refs.as_slice(), summary_from_row)?;
     let mut result = Vec::new();
     for row in rows {
@@ -162,24 +163,53 @@ pub fn movie_exists_by_path(conn: &Connection, path: &str) -> Result<bool> {
 
 fn movie_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Movie> {
     Ok(Movie {
-        id: row.get(0)?, tmdb_id: row.get(1)?, imdb_id: row.get(2)?, title: row.get(3)?,
-        title_cn: row.get(4)?, original_title: row.get(5)?, year: row.get(6)?,
-        release_date: row.get(7)?, poster_path: row.get(8)?, poster_local: row.get(9)?,
-        backdrop_path: row.get(10)?, backdrop_local: row.get(11)?, rating: row.get(12)?,
-        rating_count: row.get(13)?, genres: row.get(14)?, runtime: row.get(15)?,
-        overview: row.get(16)?, overview_cn: row.get(17)?, tagline: row.get(18)?,
-        director: row.get(19)?, cast_list: row.get(20)?, language: row.get(21)?,
-        country: row.get(22)?, local_file_path: row.get(23)?, file_size: row.get(24)?,
-        file_hash: row.get(25)?, resolution: row.get(26)?, source: row.get(27)?,
-        codec: row.get(28)?, audio_langs: row.get(29)?, added_date: row.get(30)?,
-        updated_date: row.get(31)?, tmdb_data: row.get(32)?,
+        id: row.get(0)?,
+        tmdb_id: row.get(1)?,
+        imdb_id: row.get(2)?,
+        title: row.get(3)?,
+        title_cn: row.get(4)?,
+        original_title: row.get(5)?,
+        year: row.get(6)?,
+        release_date: row.get(7)?,
+        poster_path: row.get(8)?,
+        poster_local: row.get(9)?,
+        backdrop_path: row.get(10)?,
+        backdrop_local: row.get(11)?,
+        rating: row.get(12)?,
+        rating_count: row.get(13)?,
+        genres: row.get(14)?,
+        runtime: row.get(15)?,
+        overview: row.get(16)?,
+        overview_cn: row.get(17)?,
+        tagline: row.get(18)?,
+        director: row.get(19)?,
+        cast_list: row.get(20)?,
+        language: row.get(21)?,
+        country: row.get(22)?,
+        local_file_path: row.get(23)?,
+        file_size: row.get(24)?,
+        file_hash: row.get(25)?,
+        resolution: row.get(26)?,
+        source: row.get(27)?,
+        codec: row.get(28)?,
+        audio_langs: row.get(29)?,
+        added_date: row.get(30)?,
+        updated_date: row.get(31)?,
+        tmdb_data: row.get(32)?,
     })
 }
 
 fn summary_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<MovieSummary> {
     Ok(MovieSummary {
-        id: row.get(0)?, title: row.get(1)?, title_cn: row.get(2)?, year: row.get(3)?,
-        poster_local: row.get(4)?, poster_path: row.get(5)?, rating: row.get(6)?,
-        genres: row.get(7)?, resolution: row.get(8)?, added_date: row.get(9)?,
+        id: row.get(0)?,
+        title: row.get(1)?,
+        title_cn: row.get(2)?,
+        year: row.get(3)?,
+        poster_local: row.get(4)?,
+        poster_path: row.get(5)?,
+        rating: row.get(6)?,
+        genres: row.get(7)?,
+        resolution: row.get(8)?,
+        added_date: row.get(9)?,
     })
 }

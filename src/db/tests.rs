@@ -7,7 +7,8 @@ mod tests {
 
     fn setup_db() -> (Connection, TempDir) {
         let dir = TempDir::new().expect("Failed to create temp dir");
-        let conn = connection::open_database(&dir.path().to_path_buf()).expect("Failed to open test DB");
+        let conn =
+            connection::open_database(&dir.path().to_path_buf()).expect("Failed to open test DB");
         (conn, dir)
     }
 
@@ -80,9 +81,8 @@ mod tests {
         let id = movies::insert_movie(&conn, &movie).expect("Insert failed");
         assert!(id > 0);
 
-        let fetched = movies::get_movie_by_id(&conn, id)
-            .expect("Query failed")
-            .expect("Movie not found");
+        let fetched =
+            movies::get_movie_by_id(&conn, id).expect("Query failed").expect("Movie not found");
 
         assert_eq!(fetched.title, "Test Movie 1");
         assert_eq!(fetched.year, Some(2021));
@@ -99,9 +99,8 @@ mod tests {
         movie.title = "Updated Title".to_string();
         movies::update_movie(&conn, &movie).expect("Update failed");
 
-        let fetched = movies::get_movie_by_id(&conn, id)
-            .expect("Query failed")
-            .expect("Movie not found");
+        let fetched =
+            movies::get_movie_by_id(&conn, id).expect("Query failed").expect("Movie not found");
         assert_eq!(fetched.title, "Updated Title");
     }
 
@@ -207,7 +206,8 @@ mod tests {
         movies::insert_movie(&conn, &m1).unwrap();
         movies::insert_movie(&conn, &m2).unwrap();
 
-        let results = movies::get_all_movie_summaries(&conn, "title", true, Some("Action"), None).unwrap();
+        let results =
+            movies::get_all_movie_summaries(&conn, "title", true, Some("Action"), None).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title, "Test Movie 1");
     }
@@ -219,9 +219,8 @@ mod tests {
         m.title = "Inception".to_string();
         movies::insert_movie(&conn, &m).unwrap();
 
-        let results = movies::get_all_movie_summaries(
-            &conn, "title", true, None, Some("Inception"),
-        ).unwrap();
+        let results =
+            movies::get_all_movie_summaries(&conn, "title", true, None, Some("Inception")).unwrap();
         assert!(!results.is_empty());
         assert_eq!(results[0].title, "Inception");
     }
@@ -387,10 +386,9 @@ mod tests {
         )
         .unwrap();
 
-        let saved = watchlist::get_watchlist_item_for_movie(&conn, movie_id)
-            .unwrap()
-            .unwrap();
-        let extracted = watchlist::extract_workflow_summary(saved.notes.as_deref().unwrap()).unwrap();
+        let saved = watchlist::get_watchlist_item_for_movie(&conn, movie_id).unwrap().unwrap();
+        let extracted =
+            watchlist::extract_workflow_summary(saved.notes.as_deref().unwrap()).unwrap();
 
         assert!(saved.notes.as_deref().unwrap().contains("Personal note"));
         assert_eq!(extracted, "Updated workflow title\nUpdated summary");

@@ -46,11 +46,7 @@ pub const LIGHT_THEME: AppTheme = AppTheme {
 pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     let theme = if is_dark { &DARK_THEME } else { &LIGHT_THEME };
 
-    let mut visuals = if is_dark {
-        Visuals::dark()
-    } else {
-        Visuals::light()
-    };
+    let mut visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
 
     let egui_style = Style {
         visuals: Visuals {

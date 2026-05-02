@@ -8,11 +8,7 @@ use egui::{Color32, Context, Id, Pos2};
 pub fn pulse(ctx: &Context, period: f32) -> f32 {
     let time = ctx.input(|i| i.time) as f32;
     let phase = (time % period) / period;
-    if phase < 0.5 {
-        (phase * 2.0).powf(0.7)
-    } else {
-        ((1.0 - phase) * 2.0).powf(0.7)
-    }
+    if phase < 0.5 { (phase * 2.0).powf(0.7) } else { ((1.0 - phase) * 2.0).powf(0.7) }
 }
 
 /// Returns a color that shimmers between two colors for loading skeletons.
@@ -35,10 +31,8 @@ pub fn animated_bool(ctx: &Context, id: Id, value: bool, speed: f32) -> f32 {
     let time = ctx.input(|i| i.time);
     let key = id.with("anim_bool");
 
-    let stored = ctx.data(|d| {
-        d.get_temp::<(f32, f64)>(key)
-            .unwrap_or((if value { 1.0 } else { 0.0 }, time))
-    });
+    let stored = ctx
+        .data(|d| d.get_temp::<(f32, f64)>(key).unwrap_or((if value { 1.0 } else { 0.0 }, time)));
 
     let (current, last_time) = stored;
     let dt = ((time - last_time) as f32).min(0.1);
@@ -60,16 +54,10 @@ pub fn animated_bool(ctx: &Context, id: Id, value: bool, speed: f32) -> f32 {
 /// Compute shimmer skeleton color for a poster placeholder.
 /// Caller draws the rect using the returned color.
 pub fn skeleton_poster_color(ctx: &Context, is_dark: bool) -> Color32 {
-    let base = if is_dark {
-        Color32::from_rgb(35, 35, 50)
-    } else {
-        Color32::from_rgb(225, 225, 235)
-    };
-    let highlight = if is_dark {
-        Color32::from_rgb(50, 50, 65)
-    } else {
-        Color32::from_rgb(240, 240, 248)
-    };
+    let base =
+        if is_dark { Color32::from_rgb(35, 35, 50) } else { Color32::from_rgb(225, 225, 235) };
+    let highlight =
+        if is_dark { Color32::from_rgb(50, 50, 65) } else { Color32::from_rgb(240, 240, 248) };
     shimmer(base, highlight, ctx, 1.5)
 }
 

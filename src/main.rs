@@ -36,9 +36,7 @@ fn resolve_app_data_dir() -> std::path::PathBuf {
         return legacy_fallback;
     }
 
-    preferred
-        .or(legacy)
-        .unwrap_or_else(|| std::path::PathBuf::from(home).join(".ai-movie-player"))
+    preferred.or(legacy).unwrap_or_else(|| std::path::PathBuf::from(home).join(".ai-movie-player"))
 }
 
 fn main() -> eframe::Result<()> {
@@ -51,11 +49,7 @@ fn main() -> eframe::Result<()> {
             .with_inner_size([1280.0, 800.0])
             .with_min_inner_size([900.0, 600.0])
             .with_title(format!("AI-Movie-Player v{} · ifq.ai", env!("CARGO_PKG_VERSION")))
-            .with_icon(egui::IconData {
-                rgba: vec![0; 32 * 32 * 4],
-                width: 32,
-                height: 32,
-            }),
+            .with_icon(egui::IconData { rgba: vec![0; 32 * 32 * 4], width: 32, height: 32 }),
         ..Default::default()
     };
 

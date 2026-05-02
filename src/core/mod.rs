@@ -6,8 +6,8 @@
 //! - [`metadata_service`]: Metadata enrichment orchestration (TMDB lookups).
 //! - [`subtitle_finder`]: Subtitle search and download coordination.
 
-pub mod filename_parser;
 pub mod file_organizer;
+pub mod filename_parser;
 pub mod library_manager;
 pub mod metadata_service;
 pub mod subtitle_finder;

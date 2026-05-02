@@ -19,7 +19,8 @@ use crate::ui::{
     poster_wall::PosterWall,
     settings_panel::SettingsPanel,
     subtitle_panel::SubtitlePanel,
-    theme, watchlist_panel::WatchlistPanel,
+    theme,
+    watchlist_panel::WatchlistPanel,
 };
 
 /// Toast notification
@@ -102,7 +103,11 @@ impl MovieBoxApp {
         )));
 
         let ai_client = if !settings.ai_api_key.is_empty() {
-            log::info!("AI configured: endpoint={}, model={}", settings.ai_endpoint, settings.ai_model);
+            log::info!(
+                "AI configured: endpoint={}, model={}",
+                settings.ai_endpoint,
+                settings.ai_model
+            );
             Some(Arc::new(AiClient::new(AiConfig {
                 endpoint: settings.ai_endpoint.clone(),
                 api_key: settings.ai_api_key.clone(),
@@ -265,9 +270,13 @@ impl MovieBoxApp {
                 .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, y_offset))
                 .order(egui::Order::Foreground)
                 .show(ctx, |ui| {
-                    let text_color = Color32::from_rgba_premultiplied(255, 255, 255, (fade * 255.0) as u8);
+                    let text_color =
+                        Color32::from_rgba_premultiplied(255, 255, 255, (fade * 255.0) as u8);
                     let bg_color = Color32::from_rgba_premultiplied(
-                        bg.r(), bg.g(), bg.b(), (fade.clamp(0.0, 0.95) * 255.0) as u8,
+                        bg.r(),
+                        bg.g(),
+                        bg.b(),
+                        (fade.clamp(0.0, 0.95) * 255.0) as u8,
                     );
 
                     let galley = ui.painter().layout_no_wrap(
@@ -282,11 +291,7 @@ impl MovieBoxApp {
                         size,
                     );
                     ui.painter().rect_filled(rect, Rounding::same(8.0), bg_color);
-                    ui.painter().galley(
-                        rect.min + padding,
-                        galley,
-                        text_color,
-                    );
+                    ui.painter().galley(rect.min + padding, galley, text_color);
                 });
 
             y_offset += 44.0;
@@ -328,7 +333,6 @@ impl eframe::App for MovieBoxApp {
             self.add_wizard.state = WizardState::SearchingTMDB;
 
             let client = self.tmdb_client.clone();
-            let thumbnail_dir = self.thumbnail_dir.clone();
 
             self.runtime.spawn(async move {
                 let mut search_results = Vec::new();
@@ -341,10 +345,7 @@ impl eframe::App for MovieBoxApp {
                         .unwrap_or_default();
                     let parsed = crate::core::filename_parser::parse_filename(&filename);
 
-                    match client_guard
-                        .search_movies(&parsed.title, parsed.year)
-                        .await
-                    {
+                    match client_guard.search_movies(&parsed.title, parsed.year).await {
                         Ok(results) => {
                             search_results.push((file.clone(), results));
                         }
@@ -381,7 +382,9 @@ impl eframe::App for MovieBoxApp {
             .default_width(200.0)
             .min_width(180.0)
             .show(ctx, |ui| {
-                if let Some(view) = self.layout.show_sidebar(ui, ctx, self.is_dark, self.cached_movie_count) {
+                if let Some(view) =
+                    self.layout.show_sidebar(ui, ctx, self.is_dark, self.cached_movie_count)
+                {
                     self.navigate_to(view);
                 }
             });
@@ -486,7 +489,6 @@ impl eframe::App for MovieBoxApp {
 
                                 self.subtitle_panel.searching = false;
 
-                                let client = self.tmdb_client.clone();
                                 self.runtime.spawn(async move {
                                     match crate::core::subtitle_finder::SubtitleFinder::search_all_sources(&query).await {
                                         Ok(_results) => {

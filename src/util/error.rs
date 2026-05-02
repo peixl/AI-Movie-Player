@@ -17,7 +17,9 @@ pub enum AppError {
     #[error("TMDB API error / TMDB 接口错误 (code {code}): {message}")]
     TmdbApi { code: u16, message: String },
 
-    #[error("TMDB API key not configured / 未配置 TMDB API Key. Get one at https://www.themoviedb.org/settings/api")]
+    #[error(
+        "TMDB API key not configured / 未配置 TMDB API Key. Get one at https://www.themoviedb.org/settings/api"
+    )]
     TmdbKeyMissing,
 
     #[error("Movie not found on TMDB / TMDB 未找到影片: {query}")]

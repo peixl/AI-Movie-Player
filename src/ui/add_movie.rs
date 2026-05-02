@@ -50,15 +50,18 @@ impl AddMovieWizard {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        db: &Connection,
-        client: &std::sync::Arc<tokio::sync::Mutex<TmdbClient>>,
-        thumbnail_dir: &PathBuf,
+        _db: &Connection,
+        _client: &std::sync::Arc<tokio::sync::Mutex<TmdbClient>>,
+        _thumbnail_dir: &PathBuf,
         is_dark: bool,
     ) {
-        let text = if is_dark { Color32::from_rgb(240, 240, 245) }
-            else { Color32::from_rgb(15, 15, 25) };
-        let dim = if is_dark { Color32::from_rgb(150, 150, 165) }
-            else { Color32::from_rgb(100, 100, 115) };
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
+        let dim = if is_dark {
+            Color32::from_rgb(150, 150, 165)
+        } else {
+            Color32::from_rgb(100, 100, 115)
+        };
         let primary = Color32::from_rgb(99, 102, 241);
 
         ui.horizontal(|ui| {
@@ -73,7 +76,8 @@ impl AddMovieWizard {
                 ui.label(RichText::new("选择一个包含电影文件的文件夹进行导入。 / Select a folder that contains movie files.").size(14.0).color(dim));
                 ui.add_space(16.0);
 
-                if ui.button(RichText::new("📁 Choose Folder / 选择文件夹").size(16.0)).clicked() {
+                if ui.button(RichText::new("📁 Choose Folder / 选择文件夹").size(16.0)).clicked()
+                {
                     self.state = WizardState::SelectingFolder;
                 }
             }
@@ -87,19 +91,23 @@ impl AddMovieWizard {
             WizardState::Scanning => {
                 ui.label("正在扫描文件夹中的视频文件... / Scanning for video files...");
                 ui.add_space(8.0);
-                ui.label(format!("发现 {} 个视频文件 / Found {} video files", self.found_files.len(), self.found_files.len()));
+                ui.label(format!(
+                    "发现 {} 个视频文件 / Found {} video files",
+                    self.found_files.len(),
+                    self.found_files.len()
+                ));
 
                 if !self.found_files.is_empty() {
                     ui.add_space(8.0);
-                    egui::ScrollArea::vertical()
-                        .max_height(200.0)
-                        .show(ui, |ui| {
-                            for file in &self.found_files {
-                                ui.label(file.file_name()
+                    egui::ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
+                        for file in &self.found_files {
+                            ui.label(
+                                file.file_name()
                                     .map(|n| n.to_string_lossy().to_string())
-                                    .unwrap_or_default());
-                            }
-                        });
+                                    .unwrap_or_default(),
+                            );
+                        }
+                    });
                 }
             }
 
@@ -110,11 +118,15 @@ impl AddMovieWizard {
             }
 
             WizardState::ShowResults => {
-                ui.label(format!("找到 {} 个待确认结果 / Review the matches below:", self.found_files.len()));
+                ui.label(format!(
+                    "找到 {} 个待确认结果 / Review the matches below:",
+                    self.found_files.len()
+                ));
                 ui.add_space(12.0);
 
                 for (file, results) in &self.search_results {
-                    let filename = file.file_name()
+                    let filename = file
+                        .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
 
@@ -123,11 +135,18 @@ impl AddMovieWizard {
                         ui.add_space(4.0);
 
                         if results.is_empty() {
-                            ui.label(RichText::new("未找到匹配结果 / No matching results").color(Color32::from_rgb(248, 113, 113)));
+                            ui.label(
+                                RichText::new("未找到匹配结果 / No matching results")
+                                    .color(Color32::from_rgb(248, 113, 113)),
+                            );
                         } else {
                             for result in results.iter().take(5) {
                                 ui.horizontal(|ui| {
-                                    ui.label(format!("{} ({})", result.title, result.year.map_or("?".into(), |y| y.to_string())));
+                                    ui.label(format!(
+                                        "{} ({})",
+                                        result.title,
+                                        result.year.map_or("?".into(), |y| y.to_string())
+                                    ));
                                     if let Some(r) = result.rating {
                                         ui.label(format!("★{:.1}", r));
                                     }
@@ -139,7 +158,10 @@ impl AddMovieWizard {
                 }
 
                 ui.add_space(16.0);
-                if ui.button(RichText::new("Import All / 全部导入").size(14.0).color(Color32::WHITE)).clicked() {
+                if ui
+                    .button(RichText::new("Import All / 全部导入").size(14.0).color(Color32::WHITE))
+                    .clicked()
+                {
                     self.state = WizardState::Importing;
                 }
             }
@@ -157,22 +179,28 @@ impl AddMovieWizard {
             }
 
             WizardState::Done => {
-                ui.label(RichText::new(format!("导入完成：{} 部影片 / Import complete: {} movies", self.imported_movies.len(), self.imported_movies.len())).size(16.0).color(Color32::from_rgb(52, 211, 153)));
+                ui.label(
+                    RichText::new(format!(
+                        "导入完成：{} 部影片 / Import complete: {} movies",
+                        self.imported_movies.len(),
+                        self.imported_movies.len()
+                    ))
+                    .size(16.0)
+                    .color(Color32::from_rgb(52, 211, 153)),
+                );
                 ui.add_space(12.0);
 
                 if !self.imported_movies.is_empty() {
-                    egui::ScrollArea::vertical()
-                        .max_height(300.0)
-                        .show(ui, |ui| {
-                            for movie in &self.imported_movies {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("✓ {}", movie.title));
-                                    if let Some(y) = movie.year {
-                                        ui.label(format!("({})", y));
-                                    }
-                                });
-                            }
-                        });
+                    egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
+                        for movie in &self.imported_movies {
+                            ui.horizontal(|ui| {
+                                ui.label(format!("✓ {}", movie.title));
+                                if let Some(y) = movie.year {
+                                    ui.label(format!("({})", y));
+                                }
+                            });
+                        }
+                    });
                 }
 
                 ui.add_space(16.0);

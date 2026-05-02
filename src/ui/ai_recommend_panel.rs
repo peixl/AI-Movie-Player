@@ -23,9 +23,7 @@ struct SectionState {
 
 impl SectionState {
     fn new() -> Self {
-        Self {
-            content: Arc::new(Mutex::new(LoadState::Idle)),
-        }
+        Self { content: Arc::new(Mutex::new(LoadState::Idle)) }
     }
 
     fn get(&self) -> LoadState {
@@ -60,22 +58,16 @@ impl AiRecommendPanel {
         runtime: &tokio::runtime::Runtime,
         is_dark: bool,
     ) {
-        let text = if is_dark {
-            Color32::from_rgb(240, 240, 245)
-        } else {
-            Color32::from_rgb(15, 15, 25)
-        };
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
         let dim = if is_dark {
             Color32::from_rgb(150, 150, 165)
         } else {
             Color32::from_rgb(100, 100, 115)
         };
         let primary = Color32::from_rgb(99, 102, 241);
-        let bg = if is_dark {
-            Color32::from_rgb(17, 17, 25)
-        } else {
-            Color32::from_rgb(250, 250, 253)
-        };
+        let bg =
+            if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) };
 
         // Header
         ui.horizontal(|ui| {
@@ -211,24 +203,25 @@ impl AiRecommendPanel {
         library: &[Movie],
         runtime: &tokio::runtime::Runtime,
         is_dark: bool,
-        fetcher: impl Fn(Arc<AiClient>, Vec<Movie>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send>> + Send + Sync + 'static,
+        fetcher: impl Fn(
+            Arc<AiClient>,
+            Vec<Movie>,
+        ) -> std::pin::Pin<
+            Box<dyn std::future::Future<Output = Result<String, String>> + Send>,
+        > + Send
+        + Sync
+        + 'static,
     ) {
-        let text = if is_dark {
-            Color32::from_rgb(240, 240, 245)
-        } else {
-            Color32::from_rgb(15, 15, 25)
-        };
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
         let dim = if is_dark {
             Color32::from_rgb(150, 150, 165)
         } else {
             Color32::from_rgb(100, 100, 115)
         };
         let primary = Color32::from_rgb(99, 102, 241);
-        let bg = if is_dark {
-            Color32::from_rgb(17, 17, 25)
-        } else {
-            Color32::from_rgb(250, 250, 253)
-        };
+        let bg =
+            if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) };
 
         let current_state = state.get();
 
@@ -245,13 +238,17 @@ impl AiRecommendPanel {
                         match &current_state {
                             LoadState::Idle => {
                                 let btn = egui::Button::new(
-                                    RichText::new("Generate / 生成").size(12.0).color(Color32::WHITE),
+                                    RichText::new("Generate / 生成")
+                                        .size(12.0)
+                                        .color(Color32::WHITE),
                                 )
                                 .fill(primary)
                                 .rounding(Rounding::same(6.0));
                                 if ui.add(btn).clicked() {
                                     if let Some(client) = client.as_ref() {
-                                        state.set(LoadState::Loading("正在生成中 / Generating...".into()));
+                                        state.set(LoadState::Loading(
+                                            "正在生成中 / Generating...".into(),
+                                        ));
                                         let client = client.clone();
                                         let library = library.to_vec();
                                         let content_arc = state.content.clone();
@@ -310,10 +307,12 @@ impl AiRecommendPanel {
                     LoadState::Loading(_) => {
                         ui.add_space(8.0);
                         ui.label(
-                            RichText::new("AI 正在分析你的片库... / AI is analyzing your library...")
-                                .size(12.0)
-                                .color(dim)
-                                .italics(),
+                            RichText::new(
+                                "AI 正在分析你的片库... / AI is analyzing your library...",
+                            )
+                            .size(12.0)
+                            .color(dim)
+                            .italics(),
                         );
                     }
                     LoadState::Done(ref content) => {
@@ -330,16 +329,12 @@ impl AiRecommendPanel {
                                             .strong(),
                                     );
                                 } else if line.starts_with("**") && line.contains("**") {
-                                    ui.label(
-                                        RichText::new(line).size(13.0).color(text).strong(),
-                                    );
+                                    ui.label(RichText::new(line).size(13.0).color(text).strong());
                                 } else if line.starts_with('-') || line.starts_with('*') {
                                     ui.horizontal(|ui| {
                                         ui.label(RichText::new("•").size(12.0).color(primary));
                                         ui.label(
-                                            RichText::new(&line[1..].trim())
-                                                .size(12.0)
-                                                .color(text),
+                                            RichText::new(&line[1..].trim()).size(12.0).color(text),
                                         );
                                     });
                                 } else {

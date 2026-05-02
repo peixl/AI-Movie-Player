@@ -74,8 +74,8 @@ impl LibraryManager {
                 continue;
             }
 
-            match MetadataService::search_and_match(client, file, db).await {
-                Ok((search_result, details)) => {
+            match MetadataService::search_and_match(client, file).await {
+                Ok((_search_result, details)) => {
                     // In auto_confirm mode, import directly
                     // In manual mode, we'd show the match to the user
                     if auto_confirm {

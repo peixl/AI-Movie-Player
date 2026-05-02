@@ -1,7 +1,7 @@
 //! Subtitle metadata storage and retrieval.
 
-use rusqlite::{params, Connection};
 use crate::util::error::Result;
+use rusqlite::{Connection, params};
 
 use super::models::Subtitle;
 
@@ -21,9 +21,8 @@ pub fn insert_subtitle(conn: &Connection, s: &Subtitle) -> Result<i64> {
 }
 
 pub fn get_subtitles_for_movie(conn: &Connection, movie_id: i64) -> Result<Vec<Subtitle>> {
-    let mut stmt = conn.prepare(
-        "SELECT * FROM subtitles WHERE movie_id = ?1 ORDER BY download_date DESC"
-    )?;
+    let mut stmt =
+        conn.prepare("SELECT * FROM subtitles WHERE movie_id = ?1 ORDER BY download_date DESC")?;
     let rows = stmt.query_map(params![movie_id], subtitle_from_row)?;
     let mut result = Vec::new();
     for row in rows {
@@ -62,12 +61,22 @@ fn get_subtitle_by_id(conn: &Connection, id: i64) -> Result<Option<Subtitle>> {
 
 fn subtitle_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Subtitle> {
     Ok(Subtitle {
-        id: row.get(0)?, movie_id: row.get(1)?, language: row.get(2)?,
-        language_label: row.get(3)?, source: row.get(4)?, source_url: row.get(5)?,
-        file_name: row.get(6)?, local_path: row.get(7)?, file_size: row.get(8)?,
-        rating: row.get(9)?, download_count: row.get(10)?,
-        is_ai: row.get::<_, i32>(11)? != 0, is_hearing_imp: row.get::<_, i32>(12)? != 0,
-        format: row.get(13)?, encoding: row.get(14)?, sync_status: row.get(15)?,
+        id: row.get(0)?,
+        movie_id: row.get(1)?,
+        language: row.get(2)?,
+        language_label: row.get(3)?,
+        source: row.get(4)?,
+        source_url: row.get(5)?,
+        file_name: row.get(6)?,
+        local_path: row.get(7)?,
+        file_size: row.get(8)?,
+        rating: row.get(9)?,
+        download_count: row.get(10)?,
+        is_ai: row.get::<_, i32>(11)? != 0,
+        is_hearing_imp: row.get::<_, i32>(12)? != 0,
+        format: row.get(13)?,
+        encoding: row.get(14)?,
+        sync_status: row.get(15)?,
         download_date: row.get(16)?,
     })
 }

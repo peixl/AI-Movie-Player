@@ -143,25 +143,32 @@ impl WorkflowTemplate {
     fn description(self) -> &'static str {
         match self {
             WorkflowTemplate::Lean => "Fast, compact, and easy to act on before or after a film.",
-            WorkflowTemplate::Balanced => "The default studio output: clear, elegant, and practical.",
-            WorkflowTemplate::DeepDive => "Longer sections with more layered interpretation and viewing cues.",
+            WorkflowTemplate::Balanced => {
+                "The default studio output: clear, elegant, and practical."
+            }
+            WorkflowTemplate::DeepDive => {
+                "Longer sections with more layered interpretation and viewing cues."
+            }
         }
     }
 
     fn instructions(self) -> &'static str {
         match self {
-            WorkflowTemplate::Lean => "Template mode: Lean / 轻量版. Keep SUMMARY to one compact bilingual paragraph. Keep each BODY concise, usually 1-2 sentences. Prioritize clarity and immediate usefulness.",
-            WorkflowTemplate::Balanced => "Template mode: Balanced / 平衡版. Keep SUMMARY concise but textured. Keep each BODY to 2-3 sentences with a calm, elegant cadence.",
-            WorkflowTemplate::DeepDive => "Template mode: Deep Dive / 深入版. Keep the exact structure, but make each BODY more layered and observant, usually 3-5 sentences without becoming bloated.",
+            WorkflowTemplate::Lean => {
+                "Template mode: Lean / 轻量版. Keep SUMMARY to one compact bilingual paragraph. Keep each BODY concise, usually 1-2 sentences. Prioritize clarity and immediate usefulness."
+            }
+            WorkflowTemplate::Balanced => {
+                "Template mode: Balanced / 平衡版. Keep SUMMARY concise but textured. Keep each BODY to 2-3 sentences with a calm, elegant cadence."
+            }
+            WorkflowTemplate::DeepDive => {
+                "Template mode: Deep Dive / 深入版. Keep the exact structure, but make each BODY more layered and observant, usually 3-5 sentences without becoming bloated."
+            }
         }
     }
 }
 
-const WORKFLOW_TEMPLATES: [WorkflowTemplate; 3] = [
-    WorkflowTemplate::Lean,
-    WorkflowTemplate::Balanced,
-    WorkflowTemplate::DeepDive,
-];
+const WORKFLOW_TEMPLATES: [WorkflowTemplate; 3] =
+    [WorkflowTemplate::Lean, WorkflowTemplate::Balanced, WorkflowTemplate::DeepDive];
 
 impl WorkflowCard {
     fn export_summary_text(&self) -> String {
@@ -204,7 +211,8 @@ impl AiChatPanel {
     }
 
     pub fn select_movie(&mut self, movie: Option<Movie>) {
-        let changed_movie = self.selected_movie.as_ref().map(|m| m.id) != movie.as_ref().map(|m| m.id);
+        let changed_movie =
+            self.selected_movie.as_ref().map(|m| m.id) != movie.as_ref().map(|m| m.id);
         self.selected_movie = movie;
         if changed_movie {
             self.workflow_cards.clear();
@@ -214,7 +222,11 @@ impl AiChatPanel {
         if let Some(ref m) = self.selected_movie {
             self.history.push(ChatEntry {
                 role: "system".into(),
-                content: format!("当前影片 / Current film: **{}** ({})", m.title, m.year.unwrap_or(0)),
+                content: format!(
+                    "当前影片 / Current film: **{}** ({})",
+                    m.title,
+                    m.year.unwrap_or(0)
+                ),
                 is_streaming: false,
             });
         }
@@ -284,22 +296,16 @@ impl AiChatPanel {
         is_dark: bool,
     ) -> bool {
         let mut navigate_settings = false;
-        let text = if is_dark {
-            Color32::from_rgb(240, 240, 245)
-        } else {
-            Color32::from_rgb(15, 15, 25)
-        };
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
         let dim = if is_dark {
             Color32::from_rgb(150, 150, 165)
         } else {
             Color32::from_rgb(100, 100, 115)
         };
         let primary = Color32::from_rgb(99, 102, 241);
-        let bg = if is_dark {
-            Color32::from_rgb(17, 17, 25)
-        } else {
-            Color32::from_rgb(250, 250, 253)
-        };
+        let bg =
+            if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) };
 
         // Header
         ui.horizontal(|ui| {
@@ -307,10 +313,7 @@ impl AiChatPanel {
             ui.add_space(8.0);
             ui.heading(RichText::new("AI Companion / AI 电影对话").size(22.0).color(text));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui
-                    .button(RichText::new("Clear / 清空").size(12.0).color(dim))
-                    .clicked()
-                {
+                if ui.button(RichText::new("Clear / 清空").size(12.0).color(dim)).clicked() {
                     self.history.clear();
                     self.workflow_notice = None;
                     if let Some(ref m) = self.selected_movie {
@@ -337,8 +340,11 @@ impl AiChatPanel {
             } else {
                 Color32::from_rgb(239, 68, 68)
             };
-            ui.painter()
-                .circle_filled(ui.next_widget_position() + egui::vec2(6.0, 6.0), 4.0, dot_color);
+            ui.painter().circle_filled(
+                ui.next_widget_position() + egui::vec2(6.0, 6.0),
+                4.0,
+                dot_color,
+            );
             ui.add_space(10.0);
             ui.label(
                 RichText::new(if is_ready {
@@ -374,10 +380,7 @@ impl AiChatPanel {
                         .size(13.0)
                         .color(primary),
                 );
-                if ui
-                    .small_button(RichText::new("✕").size(11.0).color(dim))
-                    .clicked()
-                {
+                if ui.small_button(RichText::new("✕").size(11.0).color(dim)).clicked() {
                     self.selected_movie = None;
                     self.history.push(ChatEntry {
                         role: "system".into(),
@@ -386,11 +389,7 @@ impl AiChatPanel {
                     });
                 }
             } else {
-                ui.label(
-                    RichText::new("通用模式 / General mode")
-                        .size(13.0)
-                        .color(dim),
-                );
+                ui.label(RichText::new("通用模式 / General mode").size(13.0).color(dim));
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui
@@ -716,15 +715,10 @@ impl AiChatPanel {
                 && client.as_ref().map(|c| c.is_ready()).unwrap_or(false)
                 && is_idle;
 
-            let send_btn = egui::Button::new(
-                RichText::new("Send / 发送").size(13.0).color(Color32::WHITE),
-            )
-            .fill(if can_send {
-                primary
-            } else {
-                primary.linear_multiply(0.3)
-            })
-            .rounding(Rounding::same(6.0));
+            let send_btn =
+                egui::Button::new(RichText::new("Send / 发送").size(13.0).color(Color32::WHITE))
+                    .fill(if can_send { primary } else { primary.linear_multiply(0.3) })
+                    .rounding(Rounding::same(6.0));
 
             let send_clicked = ui.add_enabled(can_send, send_btn).clicked();
             let enter_pressed =
@@ -1103,14 +1097,17 @@ impl AiChatPanel {
                     *workflow_status.lock().unwrap() = WorkflowStatus::Done(card);
                 }
                 Err(err) => {
-                    *workflow_status.lock().unwrap() = WorkflowStatus::Error(Some(kind), format!("{}", err));
+                    *workflow_status.lock().unwrap() =
+                        WorkflowStatus::Error(Some(kind), format!("{}", err));
                 }
             }
         });
     }
 
     fn upsert_workflow_card(&mut self, card: WorkflowCard) {
-        if let Some(existing) = self.workflow_cards.iter_mut().find(|existing| existing.kind == card.kind) {
+        if let Some(existing) =
+            self.workflow_cards.iter_mut().find(|existing| existing.kind == card.kind)
+        {
             *existing = card;
         } else {
             self.workflow_cards.push(card);
@@ -1215,8 +1212,7 @@ fn parse_workflow_card(
     if summary.is_empty() {
         summary = format!(
             "Structured workflow output for {} / 为 {} 生成的结构化观影结果",
-            movie.title,
-            movie.title
+            movie.title, movie.title
         );
     }
 

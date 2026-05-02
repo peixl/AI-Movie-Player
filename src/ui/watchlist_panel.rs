@@ -10,10 +10,13 @@ pub struct WatchlistPanel;
 
 impl WatchlistPanel {
     pub fn show(ui: &mut Ui, db: &Connection, is_dark: bool) {
-        let text = if is_dark { Color32::from_rgb(240, 240, 245) }
-            else { Color32::from_rgb(15, 15, 25) };
-        let dim = if is_dark { Color32::from_rgb(150, 150, 165) }
-            else { Color32::from_rgb(100, 100, 115) };
+        let text =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
+        let dim = if is_dark {
+            Color32::from_rgb(150, 150, 165)
+        } else {
+            Color32::from_rgb(100, 100, 115)
+        };
 
         let primary = Color32::from_rgb(99, 102, 241);
 
@@ -41,11 +44,11 @@ impl WatchlistPanel {
                     ui.label(RichText::new("从片库中加入影片，管理接下来真正想看的内容。 / Add films from your library to track what to watch next.").size(12.0).color(dim));
                 });
             } else {
-                for (status_key, status_title) in [
-                    ("want_to_watch", "Want to Watch / 想看"),
-                    ("watched", "Watched / 已看"),
-                ] {
-                    let section_items: Vec<_> = items.iter().filter(|item| item.status == status_key).collect();
+                for (status_key, status_title) in
+                    [("want_to_watch", "Want to Watch / 想看"), ("watched", "Watched / 已看")]
+                {
+                    let section_items: Vec<_> =
+                        items.iter().filter(|item| item.status == status_key).collect();
                     if section_items.is_empty() {
                         continue;
                     }
@@ -56,7 +59,8 @@ impl WatchlistPanel {
                     for item in section_items {
                         ui.group(|ui| {
                             if let Some(mid) = item.movie_id {
-                                if let Ok(Some(movie)) = crate::db::movies::get_movie_by_id(db, mid) {
+                                if let Ok(Some(movie)) = crate::db::movies::get_movie_by_id(db, mid)
+                                {
                                     ui.horizontal(|ui| {
                                         ui.label(RichText::new(&movie.title).strong());
                                         if let Some(y) = movie.year {
@@ -70,7 +74,9 @@ impl WatchlistPanel {
                             }
                             ui.label(format!("Added / 添加于: {}", &item.added_date[..10]));
 
-                            if let Some(workflow_note) = item.notes.as_deref().and_then(watchlist::extract_workflow_summary) {
+                            if let Some(workflow_note) =
+                                item.notes.as_deref().and_then(watchlist::extract_workflow_summary)
+                            {
                                 ui.add_space(4.0);
                                 ui.label(
                                     RichText::new("Workflow Snapshot / 工作流摘要")
@@ -94,6 +100,7 @@ impl WatchlistPanel {
 }
 
 fn workflow_preview(text: &str) -> String {
-    let preview_lines: Vec<&str> = text.lines().filter(|line| !line.trim().is_empty()).take(4).collect();
+    let preview_lines: Vec<&str> =
+        text.lines().filter(|line| !line.trim().is_empty()).take(4).collect();
     preview_lines.join("\n")
 }

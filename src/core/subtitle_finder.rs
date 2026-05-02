@@ -7,9 +7,7 @@ use crate::util::error::{AppError, Result};
 pub struct SubtitleFinder;
 
 impl SubtitleFinder {
-    pub async fn search_all_sources(
-        query: &SubtitleQuery,
-    ) -> Result<Vec<SubtitleResult>> {
+    pub async fn search_all_sources(query: &SubtitleQuery) -> Result<Vec<SubtitleResult>> {
         let mut all_results = Vec::new();
 
         // Try OpenSubtitles
@@ -23,9 +21,8 @@ impl SubtitleFinder {
         // when the user explicitly requests Chinese subtitles.
 
         // Sort by rating (highest first)
-        all_results.sort_by(|a, b| {
-            b.rating.partial_cmp(&a.rating).unwrap_or(std::cmp::Ordering::Equal)
-        });
+        all_results
+            .sort_by(|a, b| b.rating.partial_cmp(&a.rating).unwrap_or(std::cmp::Ordering::Equal));
 
         Ok(all_results)
     }
@@ -65,7 +62,9 @@ impl SubtitleFinder {
             "all".to_string()
         } else {
             // Map language codes to OpenSubtitles language IDs
-            query.languages.iter()
+            query
+                .languages
+                .iter()
                 .map(|l| match l.as_str() {
                     "zh" | "zh-CN" | "chi" => "chi".to_string(),
                     "zh-TW" => "zht".to_string(),
@@ -82,10 +81,18 @@ impl SubtitleFinder {
         };
 
         let mut url = if let Some(ref imdb) = query.imdb_id {
-            format!("https://rest.opensubtitles.org/search/imdbid-{}/sublanguageid-{}", imdb.trim_start_matches("tt"), lang_ids)
+            format!(
+                "https://rest.opensubtitles.org/search/imdbid-{}/sublanguageid-{}",
+                imdb.trim_start_matches("tt"),
+                lang_ids
+            )
         } else {
-            let encoded = url::form_urlencoded::byte_serialize(query.title.as_bytes()).collect::<String>();
-            format!("https://rest.opensubtitles.org/search/query-{}/sublanguageid-{}", encoded, lang_ids)
+            let encoded =
+                url::form_urlencoded::byte_serialize(query.title.as_bytes()).collect::<String>();
+            format!(
+                "https://rest.opensubtitles.org/search/query-{}/sublanguageid-{}",
+                encoded, lang_ids
+            )
         };
 
         if let Some(year) = query.year {
@@ -107,25 +114,28 @@ impl SubtitleFinder {
             });
         }
 
-        let raw: Vec<OsSubtitle> = resp.json().await
-            .map_err(|e| AppError::Parse(format!("OpenSubtitles JSON: {}", e)))?;
+        let raw: Vec<OsSubtitle> =
+            resp.json().await.map_err(|e| AppError::Parse(format!("OpenSubtitles JSON: {}", e)))?;
 
-        let mut results: Vec<SubtitleResult> = raw.into_iter().map(|s| {
-            let lang_code = s.iso639.clone().unwrap_or_else(|| "en".into());
-            SubtitleResult {
-                title: s.file_name.clone().unwrap_or_default(),
-                language: lang_code.clone(),
-                language_label: s.language_name.unwrap_or_else(|| lang_code.clone()),
-                source: "OpenSubtitles".into(),
-                source_url: s.download_link.unwrap_or_default(),
-                file_name: s.file_name.unwrap_or_default(),
-                rating: s.rating.and_then(|r| r.parse().ok()),
-                download_count: s.downloads.and_then(|d| d.parse().ok()),
-                is_ai: false,
-                is_hearing_imp: s.hearing_imp.as_deref() == Some("1"),
-                format: s.format.unwrap_or_else(|| "srt".into()),
-            }
-        }).collect();
+        let mut results: Vec<SubtitleResult> = raw
+            .into_iter()
+            .map(|s| {
+                let lang_code = s.iso639.clone().unwrap_or_else(|| "en".into());
+                SubtitleResult {
+                    title: s.file_name.clone().unwrap_or_default(),
+                    language: lang_code.clone(),
+                    language_label: s.language_name.unwrap_or_else(|| lang_code.clone()),
+                    source: "OpenSubtitles".into(),
+                    source_url: s.download_link.unwrap_or_default(),
+                    file_name: s.file_name.unwrap_or_default(),
+                    rating: s.rating.and_then(|r| r.parse().ok()),
+                    download_count: s.downloads.and_then(|d| d.parse().ok()),
+                    is_ai: false,
+                    is_hearing_imp: s.hearing_imp.as_deref() == Some("1"),
+                    format: s.format.unwrap_or_else(|| "srt".into()),
+                }
+            })
+            .collect();
 
         // Filter by desired languages
         if !query.languages.is_empty() {
@@ -170,7 +180,8 @@ impl SubtitleFinder {
 
             let mut extracted_path = None;
             for i in 0..archive.len() {
-                let mut entry = archive.by_index(i)
+                let mut entry = archive
+                    .by_index(i)
                     .map_err(|e| AppError::Parse(format!("Zip entry error: {}", e)))?;
                 let name = entry.name().to_string();
 
@@ -185,9 +196,13 @@ impl SubtitleFinder {
             extracted_path.ok_or_else(|| AppError::Parse("No subtitle file in archive".into()))
         } else {
             // Direct download
-            let ext = if url.ends_with(".ass") { "ass" }
-                else if url.ends_with(".vtt") { "vtt" }
-                else { "srt" };
+            let ext = if url.ends_with(".ass") {
+                "ass"
+            } else if url.ends_with(".vtt") {
+                "vtt"
+            } else {
+                "srt"
+            };
 
             let filename = format!("subtitle.{}", ext);
             let dest = dest_dir.join(&filename);

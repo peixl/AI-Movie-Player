@@ -5,10 +5,7 @@ use crate::db::models::Movie;
 use crate::util::error::Result;
 
 /// Generate a comprehensive AI review of a movie.
-pub async fn generate_review(
-    client: &AiClient,
-    movie: &Movie,
-) -> Result<String> {
+pub async fn generate_review(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
         ChatMessage::system(&system),
@@ -19,17 +16,14 @@ pub async fn generate_review(
              3. 不足与遗憾 / what does not fully work\n\
              4. 适合谁看、不适合谁 / audience fit\n\
              5. 最终结论：Watch / Consider / Skip\n\
-             Keep it elegant, honest, and specific."
+             Keep it elegant, honest, and specific.",
         ),
     ];
     client.chat(&messages).await
 }
 
 /// Generate quick bullet-point pros/cons.
-pub async fn quick_verdict(
-    client: &AiClient,
-    movie: &Movie,
-) -> Result<String> {
+pub async fn quick_verdict(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
         ChatMessage::system(&system),
@@ -38,44 +32,39 @@ pub async fn quick_verdict(
              **One-liner / 一句话：** ...\n\
              **Pros / 优点：**\n- ...\n- ...\n- ...\n\
              **Cons / 不足：**\n- ...\n- ...\n\
-             **Verdict / 结论：** ✅ Worth Watching / ⚠️ Consider / ❌ Skip"
+             **Verdict / 结论：** ✅ Worth Watching / ⚠️ Consider / ❌ Skip",
         ),
     ];
     client.chat(&messages).await
 }
 
 /// Generate interesting trivia and behind-the-scenes facts.
-pub async fn generate_trivia(
-    client: &AiClient,
-    movie: &Movie,
-) -> Result<String> {
+pub async fn generate_trivia(client: &AiClient, movie: &Movie) -> Result<String> {
     let system = build_review_system_prompt(movie);
     let messages = vec![
         ChatMessage::system(&system),
         ChatMessage::user(
             "请用中英双语分享 8 条真正有信息密度的幕后细节、制作秘密、选角逸闻或彩蛋。\
-             Number them, and avoid obvious trivia the user could get from a surface-level summary."
+             Number them, and avoid obvious trivia the user could get from a surface-level summary.",
         ),
     ];
     client.chat(&messages).await
 }
 
 /// Generate a comparison between two movies.
-pub async fn compare_movies(
-    client: &AiClient,
-    movie_a: &Movie,
-    movie_b: &Movie,
-) -> Result<String> {
+pub async fn compare_movies(client: &AiClient, movie_a: &Movie, movie_b: &Movie) -> Result<String> {
     let system = format!(
         "You are an expert film critic. Compare these two films:\n\n\
          **Movie A:** {} ({})\nDirector: {}\nRating: {:.1}/10\nGenres: {}\nSynopsis: {}\n\n\
          **Movie B:** {} ({})\nDirector: {}\nRating: {:.1}/10\nGenres: {}\nSynopsis: {}\n",
-        movie_a.title, movie_a.year.unwrap_or(0),
+        movie_a.title,
+        movie_a.year.unwrap_or(0),
         movie_a.director.as_deref().unwrap_or("Unknown"),
         movie_a.rating.unwrap_or(0.0),
         movie_a.genres.as_deref().unwrap_or("Unknown"),
         movie_a.overview.as_deref().unwrap_or("N/A"),
-        movie_b.title, movie_b.year.unwrap_or(0),
+        movie_b.title,
+        movie_b.year.unwrap_or(0),
         movie_b.director.as_deref().unwrap_or("Unknown"),
         movie_b.rating.unwrap_or(0.0),
         movie_b.genres.as_deref().unwrap_or("Unknown"),
@@ -87,7 +76,7 @@ pub async fn compare_movies(
             "Compare these two films. Which is better and why? \
              What do they have in common? How do they differ in style, theme, and execution? \
              If someone likes one, will they like the other? \
-             Give a clear winner with reasoning."
+             Give a clear winner with reasoning.",
         ),
     ];
     client.chat(&messages).await
@@ -97,7 +86,7 @@ fn build_review_system_prompt(movie: &Movie) -> String {
     let mut prompt = String::from(
         "You are a professional film critic inside AI-Movie-Player, created by ifq.ai. \
          Default to a concise bilingual structure with Chinese first and English second unless the user asks otherwise. \
-         Be insightful, honest, elegant, and specific. Use markdown formatting.\n\n"
+         Be insightful, honest, elegant, and specific. Use markdown formatting.\n\n",
     );
     prompt.push_str(&format!("**Film / 影片:** {} ({})\n", movie.title, movie.year.unwrap_or(0)));
     if let Some(ref dir) = movie.director {

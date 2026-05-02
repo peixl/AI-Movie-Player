@@ -17,9 +17,8 @@ static RE_STANDARD: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static RE_EPISODE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r"(?i)^\[(\w+)\]\s+(.+?)\s*-\s*(\d+(?:v\d+)?)\s*\[(.*?)\]$"
-    ).expect("Invalid RE_EPISODE pattern")
+    Regex::new(r"(?i)^\[(\w+)\]\s+(.+?)\s*-\s*(\d+(?:v\d+)?)\s*\[(.*?)\]$")
+        .expect("Invalid RE_EPISODE pattern")
 });
 
 static RE_PARENTHESES: LazyLock<Regex> = LazyLock::new(|| {
@@ -29,18 +28,15 @@ static RE_PARENTHESES: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static RE_UNDERSCORE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r"(?i)^(.+?)_(\d{4})_(\d{3,4}p|4K)_(BluRay|WEB-DL|WEBRip|HDTV|Remux)$"
-    ).expect("Invalid RE_UNDERSCORE pattern")
+    Regex::new(r"(?i)^(.+?)_(\d{4})_(\d{3,4}p|4K)_(BluRay|WEB-DL|WEBRip|HDTV|Remux)$")
+        .expect("Invalid RE_UNDERSCORE pattern")
 });
 
-static RE_YEAR: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b((?:19|20)\d{2})\b").expect("Invalid RE_YEAR pattern")
-});
+static RE_YEAR: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b((?:19|20)\d{2})\b").expect("Invalid RE_YEAR pattern"));
 
-static RE_RESOLUTION: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)(\d{3,4}p|4K)").expect("Invalid RE_RESOLUTION pattern")
-});
+static RE_RESOLUTION: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)(\d{3,4}p|4K)").expect("Invalid RE_RESOLUTION pattern"));
 
 /// Parse a video filename into structured metadata.
 /// Supports 4 common naming conventions plus a generic fallback.
@@ -104,13 +100,9 @@ pub fn parse_filename(filename: &str) -> ParsedFilename {
     }
 
     // Fallback: extract year and resolution with generic patterns
-    let year = RE_YEAR
-        .captures(&basename)
-        .and_then(|caps| caps[1].parse::<i32>().ok());
+    let year = RE_YEAR.captures(&basename).and_then(|caps| caps[1].parse::<i32>().ok());
 
-    let resolution = RE_RESOLUTION
-        .captures(&basename)
-        .map(|caps| caps[1].to_string());
+    let resolution = RE_RESOLUTION.captures(&basename).map(|caps| caps[1].to_string());
 
     // Use everything before the year as title, or the whole basename
     let title = if let Some(y) = year {
@@ -159,9 +151,21 @@ pub fn is_video_file(filename: &str) -> bool {
 
     matches!(
         ext.as_str(),
-        "mp4" | "mkv" | "avi" | "mov" | "wmv" | "flv"
-            | "webm" | "m4v" | "mpg" | "mpeg" | "ts"
-            | "rmvb" | "divx" | "iso" | "vob"
+        "mp4"
+            | "mkv"
+            | "avi"
+            | "mov"
+            | "wmv"
+            | "flv"
+            | "webm"
+            | "m4v"
+            | "mpg"
+            | "mpeg"
+            | "ts"
+            | "rmvb"
+            | "divx"
+            | "iso"
+            | "vob"
     )
 }
 

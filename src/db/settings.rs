@@ -1,7 +1,7 @@
 //! Key-value settings store for application configuration.
 
-use rusqlite::{params, Connection};
 use crate::util::error::Result;
+use rusqlite::{Connection, params};
 
 /// Retrieve a setting value by key. Returns `None` if the key doesn't exist.
 pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>> {
@@ -25,9 +25,8 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<()> {
 
 pub fn get_all_settings(conn: &Connection) -> Result<Vec<(String, String)>> {
     let mut stmt = conn.prepare("SELECT key, value FROM settings ORDER BY key")?;
-    let rows = stmt.query_map([], |row| {
-        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-    })?;
+    let rows =
+        stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?;
     let mut result = Vec::new();
     for row in rows {
         result.push(row?);

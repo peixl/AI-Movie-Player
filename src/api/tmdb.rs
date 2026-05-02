@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::sync::Arc;
-use tokio::sync::{Mutex, Semaphore};
 use std::time::{Duration, Instant};
+use tokio::sync::{Mutex, Semaphore};
 
 use crate::db::models::{CastMember, TmdbMovieDetails, TmdbSearchResult};
 use crate::util::error::{AppError, Result};
@@ -59,10 +59,16 @@ struct TmdbMovieRaw {
 }
 
 #[derive(Debug, Deserialize)]
-struct TmdbGenre { id: i32, name: String }
+struct TmdbGenre {
+    id: i32,
+    name: String,
+}
 
 #[derive(Debug, Deserialize)]
-struct TmdbCredits { cast: Option<Vec<TmdbCast>>, crew: Option<Vec<TmdbCrew>> }
+struct TmdbCredits {
+    cast: Option<Vec<TmdbCast>>,
+    crew: Option<Vec<TmdbCrew>>,
+}
 
 #[derive(Debug, Deserialize)]
 struct TmdbCast {
@@ -73,10 +79,16 @@ struct TmdbCast {
 }
 
 #[derive(Debug, Deserialize)]
-struct TmdbCrew { name: String, job: String }
+struct TmdbCrew {
+    name: String,
+    job: String,
+}
 
 #[derive(Debug, Deserialize)]
-struct TmdbCountry { iso_3166_1: String, name: String }
+struct TmdbCountry {
+    iso_3166_1: String,
+    name: String,
+}
 
 impl TmdbClient {
     pub fn new(api_key: String, language: String) -> Self {
@@ -93,7 +105,11 @@ impl TmdbClient {
         !self.api_key.is_empty()
     }
 
-    pub async fn search_movies(&self, query: &str, year: Option<i32>) -> Result<Vec<TmdbSearchResult>> {
+    pub async fn search_movies(
+        &self,
+        query: &str,
+        year: Option<i32>,
+    ) -> Result<Vec<TmdbSearchResult>> {
         if !self.has_key() {
             return Err(AppError::TmdbKeyMissing);
         }
@@ -111,11 +127,8 @@ impl TmdbClient {
             params.push(("year", &year_str));
         }
 
-        let resp = self.client
-            .get(&format!("{}/search/movie", BASE_URL))
-            .query(&params)
-            .send()
-            .await?;
+        let resp =
+            self.client.get(&format!("{}/search/movie", BASE_URL)).query(&params).send().await?;
 
         if !resp.status().is_success() {
             return Err(AppError::TmdbApi {
@@ -125,17 +138,19 @@ impl TmdbClient {
         }
 
         let data: TmdbSearchResponse = resp.json().await?;
-        let results = data.results.into_iter().map(|r| TmdbSearchResult {
-            tmdb_id: r.id,
-            title: r.title.unwrap_or_else(|| r.name.unwrap_or_default()),
-            title_cn: None, // Will be populated by get_details for matched movies
-            year: r.release_date
-                .or(r.first_air_date)
-                .and_then(|d| d[..4].parse().ok()),
-            poster_path: r.poster_path,
-            overview: r.overview,
-            rating: r.vote_average,
-        }).collect();
+        let results = data
+            .results
+            .into_iter()
+            .map(|r| TmdbSearchResult {
+                tmdb_id: r.id,
+                title: r.title.unwrap_or_else(|| r.name.unwrap_or_default()),
+                title_cn: None, // Will be populated by get_details for matched movies
+                year: r.release_date.or(r.first_air_date).and_then(|d| d[..4].parse().ok()),
+                poster_path: r.poster_path,
+                overview: r.overview,
+                rating: r.vote_average,
+            })
+            .collect();
 
         Ok(results)
     }
@@ -147,7 +162,8 @@ impl TmdbClient {
 
         self.wait_rate_limit().await;
 
-        let resp = self.client
+        let resp = self
+            .client
             .get(&format!("{}/movie/{}", BASE_URL, tmdb_id))
             .query(&[
                 ("api_key", self.api_key.as_str()),
@@ -169,12 +185,10 @@ impl TmdbClient {
         // Also fetch Chinese details in parallel
         let cn_details = if self.language != "zh-CN" {
             self.wait_rate_limit().await;
-            let cn_resp = self.client
+            let cn_resp = self
+                .client
                 .get(&format!("{}/movie/{}", BASE_URL, tmdb_id))
-                .query(&[
-                    ("api_key", self.api_key.as_str()),
-                    ("language", "zh-CN"),
-                ])
+                .query(&[("api_key", self.api_key.as_str()), ("language", "zh-CN")])
                 .send()
                 .await?;
 
@@ -187,38 +201,38 @@ impl TmdbClient {
             None
         };
 
-        let title_cn = cn_details.as_ref()
-            .and_then(|m| m.title.clone());
+        let title_cn = cn_details.as_ref().and_then(|m| m.title.clone());
 
-        let overview_cn = cn_details.as_ref()
-            .and_then(|m| m.overview.clone());
+        let overview_cn = cn_details.as_ref().and_then(|m| m.overview.clone());
 
-        let director = raw.credits.as_ref()
+        let director = raw
+            .credits
+            .as_ref()
             .and_then(|c| c.crew.as_ref())
             .and_then(|crew| crew.iter().find(|p| p.job == "Director"))
             .map(|d| d.name.clone());
 
-        let cast_list: Vec<CastMember> = raw.credits.as_ref()
+        let cast_list: Vec<CastMember> = raw
+            .credits
+            .as_ref()
             .and_then(|c| c.cast.as_ref())
             .map(|cast| {
-                cast.iter().take(10).map(|c| CastMember {
-                    name: c.name.clone(),
-                    character: c.character.clone(),
-                    profile_path: c.profile_path.clone(),
-                }).collect()
+                cast.iter()
+                    .take(10)
+                    .map(|c| CastMember {
+                        name: c.name.clone(),
+                        character: c.character.clone(),
+                        profile_path: c.profile_path.clone(),
+                    })
+                    .collect()
             })
             .unwrap_or_default();
 
-        let genres: Vec<String> = raw.genres
-            .unwrap_or_default()
-            .into_iter()
-            .map(|g| g.name)
-            .collect();
+        let genres: Vec<String> =
+            raw.genres.unwrap_or_default().into_iter().map(|g| g.name).collect();
 
-        let country = raw.production_countries
-            .as_ref()
-            .and_then(|c| c.first())
-            .map(|c| c.iso_3166_1.clone());
+        let country =
+            raw.production_countries.as_ref().and_then(|c| c.first()).map(|c| c.iso_3166_1.clone());
 
         Ok(TmdbMovieDetails {
             tmdb_id: raw.id,
@@ -263,7 +277,10 @@ impl TmdbClient {
 
     async fn wait_rate_limit(&self) {
         // Semaphore is never closed, so acquire only fails if poisoned
-        let _permit = self.rate_limiter.acquire().await
+        let _permit = self
+            .rate_limiter
+            .acquire()
+            .await
             .expect("TMDB rate limiter semaphore closed unexpectedly");
         let mut last = self.last_request.lock().await;
         let elapsed = last.elapsed();

@@ -20,24 +20,21 @@ pub fn star_rating(ui: &mut Ui, rating: f64, max_stars: usize) -> Response {
             };
             ui.label(RichText::new(star_char).size(star_size).color(color));
         }
-    }).response
+    })
+    .response
 }
 
 pub fn genre_chip(ui: &mut Ui, genre: &str, is_selected: bool, primary: Color32) -> Response {
-    let text_color = if is_selected {
-        Color32::WHITE
-    } else {
-        Color32::from_rgb(180, 180, 190)
-    };
-    let bg = if is_selected {
-        primary
-    } else {
-        Color32::from_rgb(45, 45, 60)
-    };
+    let text_color = if is_selected { Color32::WHITE } else { Color32::from_rgb(180, 180, 190) };
+    let bg = if is_selected { primary } else { Color32::from_rgb(45, 45, 60) };
 
     let label = RichText::new(genre).size(12.0).color(text_color);
     let padding = egui::vec2(10.0, 4.0);
-    let galley = ui.painter().layout_no_wrap(label.text().to_string(), egui::FontId::proportional(12.0), text_color);
+    let galley = ui.painter().layout_no_wrap(
+        label.text().to_string(),
+        egui::FontId::proportional(12.0),
+        text_color,
+    );
     let size = galley.size() + padding * 2.0;
 
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
@@ -60,14 +57,20 @@ pub fn section_header(ui: &mut Ui, title: &str) {
 
 pub fn info_row(ui: &mut Ui, label: &str, value: &str) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new(format!("{}:", label)).size(13.0).color(Color32::from_rgb(150, 150, 160)));
+        ui.label(
+            RichText::new(format!("{}:", label)).size(13.0).color(Color32::from_rgb(150, 150, 160)),
+        );
         ui.label(RichText::new(value).size(13.0));
     });
 }
 
 pub fn badge(ui: &mut Ui, text: &str, color: Color32) {
     let label = RichText::new(text).size(11.0).color(Color32::WHITE);
-    let galley = ui.painter().layout_no_wrap(label.text().to_string(), egui::FontId::proportional(11.0), Color32::WHITE);
+    let galley = ui.painter().layout_no_wrap(
+        label.text().to_string(),
+        egui::FontId::proportional(11.0),
+        Color32::WHITE,
+    );
     let padding = egui::vec2(8.0, 3.0);
     let size = galley.size() + padding * 2.0;
 
@@ -80,7 +83,12 @@ pub fn badge(ui: &mut Ui, text: &str, color: Color32) {
 
 /// Confirmation dialog that returns true when the user confirms.
 /// Shows a modal-like overlay with message and Confirm/Cancel buttons.
-pub fn confirm_dialog(ui: &mut Ui, title: &str, message: &str, confirm_label: &str) -> Option<bool> {
+pub fn confirm_dialog(
+    ui: &mut Ui,
+    title: &str,
+    message: &str,
+    confirm_label: &str,
+) -> Option<bool> {
     let mut result = None;
     let dim = Color32::from_rgb(100, 100, 115);
 

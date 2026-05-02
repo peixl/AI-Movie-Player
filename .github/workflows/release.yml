@@ -31,7 +31,7 @@ jobs:
             artifact_name: linux-package
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@master
         with:

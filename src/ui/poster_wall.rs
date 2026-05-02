@@ -80,7 +80,11 @@ impl PosterWall {
         let search_filter = self.filter.search.as_deref();
 
         if let Ok(movies) = movies::get_all_movie_summaries(
-            db, sort_str, self.filter.ascending, genre_filter, search_filter,
+            db,
+            sort_str,
+            self.filter.ascending,
+            genre_filter,
+            search_filter,
         ) {
             self.movies = movies;
         }
@@ -91,13 +95,7 @@ impl PosterWall {
         self.filter_dirty = true;
     }
 
-    pub fn show(
-        &mut self,
-        ui: &mut Ui,
-        ctx: &Context,
-        db: &Connection,
-        is_dark: bool,
-    ) {
+    pub fn show(&mut self, ui: &mut Ui, ctx: &Context, db: &Connection, is_dark: bool) {
         if self.filter_dirty {
             self.refresh(db);
         }
@@ -113,65 +111,72 @@ impl PosterWall {
         let actual_poster_width = (available.x - GAP * (columns as f32 - 1.0)) / columns as f32;
         let actual_poster_height = actual_poster_width * 1.5;
 
-        let text_color = if is_dark {
-            Color32::from_rgb(240, 240, 245)
-        } else {
-            Color32::from_rgb(15, 15, 25)
-        };
+        let text_color =
+            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
         let dim_color = if is_dark {
             Color32::from_rgb(150, 150, 165)
         } else {
             Color32::from_rgb(100, 100, 115)
         };
 
-        egui::ScrollArea::vertical()
-            .auto_shrink([false; 2])
-            .show(ui, |ui| {
-                let mut row = 0;
-                let mut col = 0;
+        egui::ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
+            let mut row = 0;
+            let mut col = 0;
 
-                for movie in &self.movies {
-                    if col == 0 {
-                        ui.horizontal(|ui| {
-                            ui.add_space(GAP);
-                        });
-                    }
-
-                    let x = GAP + col as f32 * (actual_poster_width + GAP);
-                    let y = row as f32 * (actual_poster_height + GAP + 40.0); // 40 for title
-                    let poster_rect = egui::Rect::from_min_size(
-                        egui::pos2(x, y),
-                        Vec2::new(actual_poster_width, actual_poster_height),
-                    );
-
-                    // Only render visible posters
-                    if ui.is_rect_visible(poster_rect) {
-                        self.render_poster_card(
-                            ui, ctx, movie, actual_poster_width, actual_poster_height,
-                            text_color, dim_color, is_dark,
-                        );
-                    }
-
-                    col += 1;
-                    if col >= columns {
-                        col = 0;
-                        row += 1;
-                        ui.end_row();
-                    }
-                }
-
-                // Empty state
-                if self.movies.is_empty() {
-                    ui.add_space(40.0);
-                    ui.vertical_centered(|ui| {
-                        crate::ui::icons::icon_empty_library(ui, 80.0, dim_color);
-                        ui.add_space(16.0);
-                        ui.label(RichText::new("库中暂无影片 / No movies yet").size(18.0).color(dim_color));
-                        ui.add_space(8.0);
-                        ui.label(RichText::new("点击“导入影片”开始 / Click Import Movies to start").size(14.0).color(dim_color));
+            for movie in &self.movies {
+                if col == 0 {
+                    ui.horizontal(|ui| {
+                        ui.add_space(GAP);
                     });
                 }
-            });
+
+                let x = GAP + col as f32 * (actual_poster_width + GAP);
+                let y = row as f32 * (actual_poster_height + GAP + 40.0); // 40 for title
+                let poster_rect = egui::Rect::from_min_size(
+                    egui::pos2(x, y),
+                    Vec2::new(actual_poster_width, actual_poster_height),
+                );
+
+                // Only render visible posters
+                if ui.is_rect_visible(poster_rect) {
+                    self.render_poster_card(
+                        ui,
+                        ctx,
+                        movie,
+                        actual_poster_width,
+                        actual_poster_height,
+                        text_color,
+                        dim_color,
+                        is_dark,
+                    );
+                }
+
+                col += 1;
+                if col >= columns {
+                    col = 0;
+                    row += 1;
+                    ui.end_row();
+                }
+            }
+
+            // Empty state
+            if self.movies.is_empty() {
+                ui.add_space(40.0);
+                ui.vertical_centered(|ui| {
+                    crate::ui::icons::icon_empty_library(ui, 80.0, dim_color);
+                    ui.add_space(16.0);
+                    ui.label(
+                        RichText::new("库中暂无影片 / No movies yet").size(18.0).color(dim_color),
+                    );
+                    ui.add_space(8.0);
+                    ui.label(
+                        RichText::new("点击“导入影片”开始 / Click Import Movies to start")
+                            .size(14.0)
+                            .color(dim_color),
+                    );
+                });
+            }
+        });
     }
 
     fn render_poster_card(
@@ -185,10 +190,8 @@ impl PosterWall {
         dim_color: Color32,
         is_dark: bool,
     ) {
-        let (rect, response) = ui.allocate_exact_size(
-            Vec2::new(width, height + 40.0),
-            Sense::click(),
-        );
+        let (rect, response) =
+            ui.allocate_exact_size(Vec2::new(width, height + 40.0), Sense::click());
 
         if !ui.is_rect_visible(rect) {
             return;
@@ -216,11 +219,8 @@ impl PosterWall {
         }
 
         // Draw poster background with shimmer while loading
-        let bg_color = if is_dark {
-            Color32::from_rgb(40, 40, 55)
-        } else {
-            Color32::from_rgb(230, 230, 240)
-        };
+        let bg_color =
+            if is_dark { Color32::from_rgb(40, 40, 55) } else { Color32::from_rgb(230, 230, 240) };
 
         if let Some(ref local_path) = movie.poster_local {
             if let Some(texture) = self.texture_cache.get(&movie.id) {
@@ -291,17 +291,10 @@ impl PosterWall {
 
         // Title below poster (use layout with max_width for automatic truncation)
         let title_y = poster_img_rect.max.y + 4.0;
-        let title = if let Some(ref cn) = movie.title_cn {
-            cn.clone()
-        } else {
-            movie.title.clone()
-        };
-        let title_galley = ui.painter().layout(
-            title,
-            egui::FontId::proportional(12.0),
-            text_color,
-            width,
-        );
+        let title =
+            if let Some(ref cn) = movie.title_cn { cn.clone() } else { movie.title.clone() };
+        let title_galley =
+            ui.painter().layout(title, egui::FontId::proportional(12.0), text_color, width);
         ui.painter().galley(egui::pos2(rect.min.x, title_y), title_galley, text_color);
 
         // Year + Rating on second line
@@ -316,11 +309,8 @@ impl PosterWall {
         if let Some(ref res) = movie.resolution {
             info.push_str(&format!("  {}", res));
         }
-        let info_galley = ui.painter().layout_no_wrap(
-            info,
-            egui::FontId::proportional(11.0),
-            dim_color,
-        );
+        let info_galley =
+            ui.painter().layout_no_wrap(info, egui::FontId::proportional(11.0), dim_color);
         ui.painter().galley(egui::pos2(rect.min.x, info_y), info_galley, dim_color);
 
         // Handle click
@@ -348,7 +338,7 @@ impl PosterWall {
             let search_response = ui.add(
                 egui::TextEdit::singleline(&mut search)
                     .hint_text("Search / 搜索...")
-                    .desired_width(200.0)
+                    .desired_width(200.0),
             );
             if search_response.changed() {
                 self.filter.search = if search.is_empty() { None } else { Some(search) };
@@ -360,10 +350,18 @@ impl PosterWall {
             // Sort
             ui.label("Sort / 排序:");
             let mut sort_changed = false;
-            sort_changed |= ui.selectable_value(&mut self.filter.sort, SortOrder::DateAdded, "最近添加 / Recent").clicked();
-            sort_changed |= ui.selectable_value(&mut self.filter.sort, SortOrder::Title, "片名 / Title").clicked();
-            sort_changed |= ui.selectable_value(&mut self.filter.sort, SortOrder::Year, "年份 / Year").clicked();
-            sort_changed |= ui.selectable_value(&mut self.filter.sort, SortOrder::Rating, "评分 / Rating").clicked();
+            sort_changed |= ui
+                .selectable_value(&mut self.filter.sort, SortOrder::DateAdded, "最近添加 / Recent")
+                .clicked();
+            sort_changed |= ui
+                .selectable_value(&mut self.filter.sort, SortOrder::Title, "片名 / Title")
+                .clicked();
+            sort_changed |= ui
+                .selectable_value(&mut self.filter.sort, SortOrder::Year, "年份 / Year")
+                .clicked();
+            sort_changed |= ui
+                .selectable_value(&mut self.filter.sort, SortOrder::Rating, "评分 / Rating")
+                .clicked();
 
             if sort_changed {
                 self.filter_dirty = true;

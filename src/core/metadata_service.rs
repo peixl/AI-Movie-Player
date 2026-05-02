@@ -84,7 +84,6 @@ impl MetadataService {
     pub async fn search_and_match(
         client: &TmdbClient,
         file_path: &std::path::Path,
-        db: &Connection,
     ) -> Result<(TmdbSearchResult, TmdbMovieDetails)> {
         let filename =
             file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();

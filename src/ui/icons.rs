@@ -2,7 +2,7 @@
 //! Each icon uses imperfect curves, varying stroke widths, and organic shapes
 //! to achieve a warm, hand-sketched feel.
 
-use egui::{pos2, vec2, Color32, Pos2, Rect, Rounding, Shape, Stroke, Ui};
+use egui::{Color32, Pos2, Rect, Rounding, Shape, Stroke, Ui, pos2, vec2};
 
 /// Wobble offset for a point to create hand-drawn imperfection.
 /// Returns offset that varies with position to avoid repeating patterns.
@@ -18,7 +18,14 @@ pub(crate) fn wobble(x: f32, y: f32, seed: f32) -> Pos2 {
     pos2(x + wx, y + wy)
 }
 
-fn sketched_line(painter: &egui::Painter, p1: Pos2, p2: Pos2, color: Color32, width: f32, seed: f32) {
+fn sketched_line(
+    painter: &egui::Painter,
+    p1: Pos2,
+    p2: Pos2,
+    color: Color32,
+    width: f32,
+    seed: f32,
+) {
     let mid = pos2((p1.x + p2.x) / 2.0, (p1.y + p2.y) / 2.0);
     // Add slight curve instead of straight line
     let offset = (p2 - p1).normalized().rot90() * (width * 0.3);
@@ -129,11 +136,7 @@ pub fn icon_film(ui: &mut Ui, size: f32, color: Color32) {
         wobble(center.x - 4.0, center.y + 6.0, seed + 301.0),
         wobble(center.x + 7.0, center.y, seed + 302.0),
     ];
-    painter.add(Shape::convex_polygon(
-        tri_points.to_vec(),
-        color,
-        Stroke::new(0.5, color),
-    ));
+    painter.add(Shape::convex_polygon(tri_points.to_vec(), color, Stroke::new(0.5, color)));
 }
 
 /// Folder + plus icon (add movie)
@@ -172,9 +175,7 @@ pub fn icon_add_folder(ui: &mut Ui, size: f32, color: Color32) {
         wobble(center.x + folder_w / 2.0, top + tab_h * 0.5, seed + 8.0),
     ];
     let mut all_pts = tab_pts.to_vec();
-    all_pts.extend_from_slice(&[
-        body_pts[0], body_pts[1], body_pts[2], body_pts[3],
-    ]);
+    all_pts.extend_from_slice(&[body_pts[0], body_pts[1], body_pts[2], body_pts[3]]);
 
     // Draw folder outline
     let rect = Rect::from_min_max(
@@ -193,8 +194,22 @@ pub fn icon_add_folder(ui: &mut Ui, size: f32, color: Color32) {
     let cy = center.y + 6.0;
     let arm = 5.0;
     let plus_color = color.linear_multiply(1.2);
-    sketched_line(painter, wobble(cx - arm, cy, seed + 50.0), wobble(cx + arm, cy, seed + 51.0), plus_color, 2.0, seed + 52.0);
-    sketched_line(painter, wobble(cx, cy - arm, seed + 53.0), wobble(cx, cy + arm, seed + 54.0), plus_color, 2.0, seed + 55.0);
+    sketched_line(
+        painter,
+        wobble(cx - arm, cy, seed + 50.0),
+        wobble(cx + arm, cy, seed + 51.0),
+        plus_color,
+        2.0,
+        seed + 52.0,
+    );
+    sketched_line(
+        painter,
+        wobble(cx, cy - arm, seed + 53.0),
+        wobble(cx, cy + arm, seed + 54.0),
+        plus_color,
+        2.0,
+        seed + 55.0,
+    );
 }
 
 /// Subtitle / text bubble icon
@@ -297,13 +312,17 @@ pub fn icon_bookmark(ui: &mut Ui, size: f32, color: Color32) {
         painter,
         wobble(check_x - 4.0, check_y, seed + 50.0),
         wobble(check_x - 1.0, check_y + 3.0, seed + 51.0),
-        color, 1.5, seed + 52.0,
+        color,
+        1.5,
+        seed + 52.0,
     );
     sketched_line(
         painter,
         wobble(check_x - 1.0, check_y + 3.0, seed + 53.0),
         wobble(check_x + 5.0, check_y - 4.0, seed + 54.0),
-        color, 1.5, seed + 55.0,
+        color,
+        1.5,
+        seed + 55.0,
     );
 }
 
@@ -321,16 +340,15 @@ pub fn icon_gear(ui: &mut Ui, size: f32, color: Color32) {
         let angle = i as f32 * std::f32::consts::TAU / 8.0;
         let tooth_r = outer_r + 2.5;
         let (sx, sy) = (angle.cos(), angle.sin());
-        let p1 = pos2(
-            center.x + sx * (outer_r - 0.5),
-            center.y + sy * (outer_r - 0.5),
-        );
+        let p1 = pos2(center.x + sx * (outer_r - 0.5), center.y + sy * (outer_r - 0.5));
         let p2 = pos2(center.x + sx * tooth_r, center.y + sy * tooth_r);
         sketched_line(
             painter,
             wobble(p1.x, p1.y, seed + i as f32),
             wobble(p2.x, p2.y, seed + 10.0 + i as f32),
-            color, 2.0, seed + 20.0 + i as f32,
+            color,
+            2.0,
+            seed + 20.0 + i as f32,
         );
     }
 
@@ -372,7 +390,10 @@ pub fn icon_search(ui: &mut Ui, size: f32, color: Color32) {
     let circle_pts: Vec<Pos2> = (0..16)
         .map(|i| {
             let angle = i as f32 * std::f32::consts::TAU / 16.0;
-            let p = pos2(glass_center.x + angle.cos() * glass_r, glass_center.y + angle.sin() * glass_r);
+            let p = pos2(
+                glass_center.x + angle.cos() * glass_r,
+                glass_center.y + angle.sin() * glass_r,
+            );
             wobble(p.x, p.y, seed + i as f32)
         })
         .collect();
@@ -389,10 +410,7 @@ pub fn icon_search(ui: &mut Ui, size: f32, color: Color32) {
     }
 
     // Handle
-    let handle_start = pos2(
-        glass_center.x + glass_r * 0.7,
-        glass_center.y + glass_r * 0.7,
-    );
+    let handle_start = pos2(glass_center.x + glass_r * 0.7, glass_center.y + glass_r * 0.7);
     let handle_end = pos2(handle_start.x + 6.0, handle_start.y + 6.0);
     sketched_line(painter, handle_start, handle_end, color, 2.0, seed + 50.0);
 }
@@ -415,11 +433,7 @@ pub fn icon_star(ui: &mut Ui, size: f32, color: Color32, filled: bool) {
         .collect();
 
     if filled {
-        painter.add(Shape::convex_polygon(
-            pts.clone(),
-            color,
-            Stroke::new(0.5, color),
-        ));
+        painter.add(Shape::convex_polygon(pts.clone(), color, Stroke::new(0.5, color)));
     } else {
         for i in 0..pts.len() {
             let p1 = pts[i];
@@ -442,7 +456,9 @@ pub fn icon_download(ui: &mut Ui, size: f32, color: Color32) {
         painter,
         wobble(center.x, top, seed),
         wobble(center.x, bottom, seed + 1.0),
-        color, 2.0, seed + 2.0,
+        color,
+        2.0,
+        seed + 2.0,
     );
 
     // Arrow head
@@ -450,13 +466,17 @@ pub fn icon_download(ui: &mut Ui, size: f32, color: Color32) {
         painter,
         wobble(center.x - 5.0, bottom - 4.0, seed + 3.0),
         wobble(center.x, bottom + 2.0, seed + 4.0),
-        color, 2.0, seed + 5.0,
+        color,
+        2.0,
+        seed + 5.0,
     );
     sketched_line(
         painter,
         wobble(center.x, bottom + 2.0, seed + 6.0),
         wobble(center.x + 5.0, bottom - 4.0, seed + 7.0),
-        color, 2.0, seed + 8.0,
+        color,
+        2.0,
+        seed + 8.0,
     );
 
     // Top bar
@@ -464,7 +484,9 @@ pub fn icon_download(ui: &mut Ui, size: f32, color: Color32) {
         painter,
         wobble(center.x - 6.0, top, seed + 9.0),
         wobble(center.x + 6.0, top, seed + 10.0),
-        color, 1.5, seed + 11.0,
+        color,
+        1.5,
+        seed + 11.0,
     );
 }
 
@@ -485,14 +507,20 @@ pub fn icon_heart(ui: &mut Ui, size: f32, color: Color32, filled: bool) {
         let mut pts = Vec::new();
         for i in 0..8 {
             let angle = i as f32 * std::f32::consts::TAU / 8.0;
-            let p = pos2(left_center.x + angle.cos() * s * 0.55, left_center.y + angle.sin() * s * 0.45);
+            let p = pos2(
+                left_center.x + angle.cos() * s * 0.55,
+                left_center.y + angle.sin() * s * 0.45,
+            );
             if p.x <= left_center.x {
                 pts.push(wobble(p.x, p.y, seed + i as f32));
             }
         }
         for i in 0..8 {
             let angle = i as f32 * std::f32::consts::TAU / 8.0;
-            let p = pos2(right_center.x + angle.cos() * s * 0.55, right_center.y + angle.sin() * s * 0.45);
+            let p = pos2(
+                right_center.x + angle.cos() * s * 0.55,
+                right_center.y + angle.sin() * s * 0.45,
+            );
             if p.x >= right_center.x {
                 pts.push(wobble(p.x, p.y, seed + 100.0 + i as f32));
             }
@@ -563,8 +591,16 @@ pub fn icon_empty_library(ui: &mut Ui, size: f32, color: Color32) {
     // Sprocket holes
     for i in 0..3 {
         let y = frame.min.y + frame.height() * (i as f32 + 0.5) / 3.0;
-        painter.circle_filled(wobble(frame.min.x + 5.0, y, seed + 100.0 + i as f32), 2.0, color.linear_multiply(0.3));
-        painter.circle_filled(wobble(frame.max.x - 5.0, y, seed + 200.0 + i as f32), 2.0, color.linear_multiply(0.3));
+        painter.circle_filled(
+            wobble(frame.min.x + 5.0, y, seed + 100.0 + i as f32),
+            2.0,
+            color.linear_multiply(0.3),
+        );
+        painter.circle_filled(
+            wobble(frame.max.x - 5.0, y, seed + 200.0 + i as f32),
+            2.0,
+            color.linear_multiply(0.3),
+        );
     }
 }
 
@@ -579,13 +615,17 @@ pub fn icon_checkmark(ui: &mut Ui, size: f32, color: Color32) {
         painter,
         wobble(center.x - s, center.y, seed),
         wobble(center.x - s * 0.3, center.y + s * 0.7, seed + 1.0),
-        color, 2.5, seed + 2.0,
+        color,
+        2.5,
+        seed + 2.0,
     );
     sketched_line(
         painter,
         wobble(center.x - s * 0.3, center.y + s * 0.7, seed + 3.0),
         wobble(center.x + s, center.y - s * 0.5, seed + 4.0),
-        color, 2.5, seed + 5.0,
+        color,
+        2.5,
+        seed + 5.0,
     );
 }
 
@@ -633,11 +673,7 @@ pub fn icon_sparkle(ui: &mut Ui, size: f32, color: Color32) {
         let a = i as f32 * std::f32::consts::TAU / 4.0;
         let a2 = a + std::f32::consts::TAU / 8.0;
         // Long point
-        let p_outer = wobble(
-            center.x + a.cos() * r,
-            center.y + a.sin() * r,
-            seed + i as f32,
-        );
+        let p_outer = wobble(center.x + a.cos() * r, center.y + a.sin() * r, seed + i as f32);
         // Short indent
         let p_inner1 = wobble(
             center.x + a2.cos() * r * 0.3,
@@ -650,11 +686,8 @@ pub fn icon_sparkle(ui: &mut Ui, size: f32, color: Color32) {
             seed + 11.0 + i as f32,
         );
         let next_a = a + std::f32::consts::TAU / 4.0;
-        let p_next_outer = wobble(
-            center.x + next_a.cos() * r,
-            center.y + next_a.sin() * r,
-            seed + (i + 1) as f32,
-        );
+        let p_next_outer =
+            wobble(center.x + next_a.cos() * r, center.y + next_a.sin() * r, seed + (i + 1) as f32);
         // Connect with lines: outer -> inner -> next outer
         sketched_line(painter, p_outer, p_inner1, color, 1.4, seed + 20.0 + i as f32);
         sketched_line(painter, p_inner1, p_next_outer, color, 1.4, seed + 21.0 + i as f32);
