@@ -9,9 +9,9 @@
 //! - [`ai_chat_panel`]: AI companion streaming chat interface.
 //! - [`ai_recommend_panel`]: AI taste engine recommendation display.
 //! - [`settings_panel`]: Settings and AI provider configuration.
-//! - [`add_movie_panel`]: Movie import workflow.
+//! - [`add_movie`]: Movie import workflow.
 //! - [`subtitle_panel`]: Subtitle search and download interface.
-//! - [`batch_ops_panel`]: Batch operations for library management.
+//! - [`batch_ops`]: Batch operations for library management.
 //! - [`watchlist_panel`]: Watchlist management interface.
 //! - [`widgets`]: Reusable UI components.
 

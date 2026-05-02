@@ -90,12 +90,6 @@ pub struct WatchlistItem {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Setting {
-    pub key: String,
-    pub value: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CastMember {
     pub name: String,
     pub character: String,

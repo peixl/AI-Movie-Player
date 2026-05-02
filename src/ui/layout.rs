@@ -1,4 +1,4 @@
-use egui::{Color32, Context, Rect, RichText, Sense, Stroke, Ui, Vec2, pos2};
+use egui::{Color32, Context, Rect, RichText, Sense, Stroke, Ui, pos2};
 
 use crate::ui::Rounding;
 
