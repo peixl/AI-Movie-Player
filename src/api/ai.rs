@@ -97,6 +97,68 @@ struct ChatStreamDelta {
     content: Option<String>,
 }
 
+enum StreamParseResult {
+    Token(String),
+    Done,
+    Ignore,
+}
+
+fn parse_stream_line(line: &str) -> StreamParseResult {
+    let line = line.trim();
+
+    if line.is_empty() || !line.starts_with("data: ") {
+        return StreamParseResult::Ignore;
+    }
+
+    let data = &line[6..];
+    if data == "[DONE]" {
+        return StreamParseResult::Done;
+    }
+
+    match serde_json::from_str::<ChatStreamChunk>(data) {
+        Ok(parsed) => parsed
+            .choices
+            .first()
+            .and_then(|choice| choice.delta.content.as_deref())
+            .map(|token| StreamParseResult::Token(token.to_string()))
+            .unwrap_or(StreamParseResult::Ignore),
+        Err(_) => StreamParseResult::Ignore,
+    }
+}
+
+fn collect_stream_tokens(buffer: &mut String, flush_partial: bool) -> (Vec<String>, bool) {
+    let mut tokens = Vec::new();
+    let mut saw_done = false;
+
+    while let Some(newline_pos) = buffer.find('\n') {
+        let line = buffer[..newline_pos].to_string();
+        buffer.drain(..=newline_pos);
+
+        match parse_stream_line(&line) {
+            StreamParseResult::Token(token) => tokens.push(token),
+            StreamParseResult::Done => {
+                saw_done = true;
+                buffer.clear();
+                break;
+            }
+            StreamParseResult::Ignore => {}
+        }
+    }
+
+    if flush_partial && !saw_done {
+        let line = buffer.trim().to_string();
+        buffer.clear();
+
+        match parse_stream_line(&line) {
+            StreamParseResult::Token(token) => tokens.push(token),
+            StreamParseResult::Done => saw_done = true,
+            StreamParseResult::Ignore => {}
+        }
+    }
+
+    (tokens, saw_done)
+}
+
 /// AI client with OpenAI-compatible API
 pub struct AiClient {
     config: AiConfig,
@@ -106,11 +168,7 @@ pub struct AiClient {
 
 impl AiClient {
     pub fn new(config: AiConfig) -> Self {
-        Self {
-            config,
-            client: reqwest::Client::new(),
-            rate_limiter: Arc::new(Semaphore::new(10)),
-        }
+        Self { config, client: reqwest::Client::new(), rate_limiter: Arc::new(Semaphore::new(10)) }
     }
 
     pub fn config(&self) -> &AiConfig {
@@ -127,8 +185,7 @@ impl AiClient {
             return Err(AppError::Config("AI API key not configured / 未配置 AI API Key".into()));
         }
 
-        let _permit = self.rate_limiter.acquire().await
-            .expect("AI rate limiter semaphore closed");
+        let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
         let req = ChatRequest {
             model: self.config.model.clone(),
@@ -138,7 +195,8 @@ impl AiClient {
             stream: None,
         };
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(format!("{}/chat/completions", self.config.endpoint.trim_end_matches('/')))
             .header("Authorization", format!("Bearer {}", self.config.api_key))
             .header("Content-Type", "application/json")
@@ -157,7 +215,8 @@ impl AiClient {
         }
 
         let data: ChatResponse = resp.json().await?;
-        let content = data.choices
+        let content = data
+            .choices
             .first()
             .and_then(|c| c.message.content.as_deref())
             .unwrap_or_default()
@@ -176,8 +235,7 @@ impl AiClient {
             return Err(AppError::Config("AI API key not configured / 未配置 AI API Key".into()));
         }
 
-        let _permit = self.rate_limiter.acquire().await
-            .expect("AI rate limiter semaphore closed");
+        let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
         let req = ChatRequest {
             model: self.config.model.clone(),
@@ -187,7 +245,8 @@ impl AiClient {
             stream: Some(true),
         };
 
-        let resp = self.client
+        let resp = self
+            .client
             .post(format!("{}/chat/completions", self.config.endpoint.trim_end_matches('/')))
             .header("Authorization", format!("Bearer {}", self.config.api_key))
             .header("Content-Type", "application/json")
@@ -198,38 +257,39 @@ impl AiClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::Config(format!("AI API error / AI 接口错误 ({})：{}", status, body)));
+            return Err(AppError::Config(format!(
+                "AI API error / AI 接口错误 ({})：{}",
+                status, body
+            )));
         }
 
         let mut full_response = String::new();
         let mut buffer = String::new();
         let mut stream = resp.bytes_stream();
+        let mut saw_done = false;
 
         use futures_util::StreamExt;
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
             buffer.push_str(&String::from_utf8_lossy(&chunk));
 
-            while let Some(newline_pos) = buffer.find('\n') {
-                let line = buffer[..newline_pos].trim().to_string();
-                buffer = buffer[newline_pos + 1..].to_string();
+            let (tokens, done) = collect_stream_tokens(&mut buffer, false);
+            for token in tokens {
+                full_response.push_str(&token);
+                on_token(&token);
+            }
 
-                if line.is_empty() || !line.starts_with("data: ") {
-                    continue;
-                }
-                let data = &line[6..];
-                if data == "[DONE]" {
-                    break;
-                }
-                if let Ok(parsed) = serde_json::from_str::<ChatStreamChunk>(data) {
-                    if let Some(token) = parsed.choices
-                        .first()
-                        .and_then(|c| c.delta.content.as_deref())
-                    {
-                        full_response.push_str(token);
-                        on_token(token);
-                    }
-                }
+            if done {
+                saw_done = true;
+                break;
+            }
+        }
+
+        if !saw_done {
+            let (tokens, _) = collect_stream_tokens(&mut buffer, true);
+            for token in tokens {
+                full_response.push_str(&token);
+                on_token(&token);
             }
         }
 
@@ -238,10 +298,59 @@ impl AiClient {
 
     /// Quick single-question helper — sends one user message, returns response.
     pub async fn ask(&self, system_prompt: &str, user_question: &str) -> Result<String> {
-        let messages = vec![
-            ChatMessage::system(system_prompt),
-            ChatMessage::user(user_question),
-        ];
+        let messages = vec![ChatMessage::system(system_prompt), ChatMessage::user(user_question)];
         self.chat(&messages).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::collect_stream_tokens;
+
+    fn token_line(content: &str) -> String {
+        format!("data: {{\"choices\":[{{\"delta\":{{\"content\":\"{}\"}}}}]}}", content)
+    }
+
+    #[test]
+    fn stream_parser_handles_fragmented_chunks() {
+        let mut buffer = String::from("data: {\"choices\":[{\"delta\":{\"content\":\"Hel");
+        let (tokens, done) = collect_stream_tokens(&mut buffer, false);
+
+        assert!(tokens.is_empty());
+        assert!(!done);
+
+        buffer.push_str("lo\"}}]}\n");
+        buffer.push_str("data: [DONE]\n");
+
+        let (tokens, done) = collect_stream_tokens(&mut buffer, false);
+        assert_eq!(tokens, vec!["Hello"]);
+        assert!(done);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn stream_parser_flushes_unterminated_tail_on_eof() {
+        let mut buffer = token_line("TailToken");
+
+        let (tokens, done) = collect_stream_tokens(&mut buffer, false);
+        assert!(tokens.is_empty());
+        assert!(!done);
+
+        let (tokens, done) = collect_stream_tokens(&mut buffer, true);
+        assert_eq!(tokens, vec!["TailToken"]);
+        assert!(!done);
+        assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn stream_parser_ignores_non_data_lines_and_stops_after_done() {
+        let mut buffer = String::from(
+            "event: ping\n\ndata: {\"choices\":[{\"delta\":{\"content\":\"A\"}}]}\ndata: [DONE]\ndata: {\"choices\":[{\"delta\":{\"content\":\"B\"}}]}\n",
+        );
+
+        let (tokens, done) = collect_stream_tokens(&mut buffer, false);
+        assert_eq!(tokens, vec!["A"]);
+        assert!(done);
+        assert!(buffer.is_empty());
     }
 }

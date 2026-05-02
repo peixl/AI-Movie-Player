@@ -1,9 +1,9 @@
 //! Metadata enrichment orchestration: TMDB lookups, file hashing, and DB persistence.
 
-use std::path::PathBuf;
 use rusqlite::Connection;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::io::Read;
+use std::path::PathBuf;
 
 use crate::api::tmdb::TmdbClient;
 use crate::core::filename_parser::{self, is_video_file};
@@ -14,6 +14,27 @@ use crate::util::error::Result;
 /// Orchestrates metadata enrichment: directory scanning, TMDB lookup, and DB storage.
 pub struct MetadataService;
 
+fn select_best_match<'a>(
+    parsed: &ParsedFilename,
+    results: &'a [TmdbSearchResult],
+) -> Option<&'a TmdbSearchResult> {
+    if results.is_empty() {
+        return None;
+    }
+
+    if results.len() == 1 {
+        return results.first();
+    }
+
+    results
+        .iter()
+        .find(|result| {
+            result.title.to_lowercase() == parsed.title.to_lowercase()
+                && parsed.year.is_none_or(|year| result.year == Some(year))
+        })
+        .or_else(|| results.first())
+}
+
 impl MetadataService {
     pub fn scan_directory(dir: &std::path::Path) -> Vec<PathBuf> {
         let mut files = Vec::new();
@@ -21,7 +42,8 @@ impl MetadataService {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file() {
-                    let name = path.file_name()
+                    let name = path
+                        .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
                     if is_video_file(&name) {
@@ -47,7 +69,10 @@ impl MetadataService {
             // Also read tail
             let tail_start = file_size - sample_size;
             let mut file = std::fs::File::open(path)?;
-            std::io::Seek::seek(&mut std::io::BufReader::new(&mut file), std::io::SeekFrom::Start(tail_start))?;
+            std::io::Seek::seek(
+                &mut std::io::BufReader::new(&mut file),
+                std::io::SeekFrom::Start(tail_start),
+            )?;
             let mut tail_buf = vec![0u8; sample_size as usize];
             file.read_exact(&mut tail_buf)?;
             hasher.update(&tail_buf);
@@ -61,10 +86,8 @@ impl MetadataService {
         file_path: &std::path::Path,
         db: &Connection,
     ) -> Result<(TmdbSearchResult, TmdbMovieDetails)> {
-        let filename = file_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default();
+        let filename =
+            file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
 
         let parsed = filename_parser::parse_filename(&filename);
 
@@ -76,15 +99,9 @@ impl MetadataService {
             });
         }
 
-        // Auto-match: if only 1 result, or exact title + year match
-        let best = if results.len() == 1 {
-            &results[0]
-        } else {
-            results.iter().find(|r| {
-                r.title.to_lowercase() == parsed.title.to_lowercase()
-                    && parsed.year.map_or(true, |y| r.year == Some(y))
-            }).unwrap_or(&results[0])
-        };
+        let best = select_best_match(&parsed, &results).ok_or_else(|| {
+            crate::util::error::AppError::MovieNotFound { query: parsed.title.clone() }
+        })?;
 
         let details = client.get_movie_details(best.tmdb_id).await?;
 
@@ -98,10 +115,8 @@ impl MetadataService {
         db: &Connection,
         thumbnail_dir: &PathBuf,
     ) -> Result<Movie> {
-        let filename = file_path
-            .file_name()
-            .map(|n| n.to_string_lossy().to_string())
-            .unwrap_or_default();
+        let filename =
+            file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
         let parsed = filename_parser::parse_filename(&filename);
         let file_size = std::fs::metadata(file_path).ok().map(|m| m.len() as i64);
         let file_hash = Self::compute_file_hash(file_path, 64 * 1024).ok();
@@ -116,7 +131,9 @@ impl MetadataService {
                 poster_path,
                 details.tmdb_id,
                 thumbnail_dir,
-            ).await.ok()
+            )
+            .await
+            .ok()
         } else {
             None
         };
@@ -160,5 +177,122 @@ impl MetadataService {
         let id = movies::insert_movie(db, &movie)?;
 
         Ok(Movie { id, ..movie })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Write;
+
+    use sha2::{Digest, Sha256};
+    use tempfile::TempDir;
+
+    use super::{MetadataService, select_best_match};
+    use crate::db::models::{ParsedFilename, TmdbSearchResult};
+
+    fn parsed_filename(title: &str, year: Option<i32>) -> ParsedFilename {
+        ParsedFilename {
+            title: title.to_string(),
+            year,
+            resolution: None,
+            source: None,
+            codec: None,
+            group: None,
+            episode: None,
+            is_tv: false,
+        }
+    }
+
+    fn tmdb_result(id: i64, title: &str, year: Option<i32>) -> TmdbSearchResult {
+        TmdbSearchResult {
+            tmdb_id: id,
+            title: title.to_string(),
+            title_cn: None,
+            year,
+            poster_path: None,
+            overview: None,
+            rating: None,
+        }
+    }
+
+    #[test]
+    fn select_best_match_prefers_exact_title_and_year() {
+        let parsed = parsed_filename("Dune", Some(2021));
+        let results = vec![
+            tmdb_result(1, "Dune", Some(1984)),
+            tmdb_result(2, "Dune", Some(2021)),
+            tmdb_result(3, "Dune Part Two", Some(2024)),
+        ];
+
+        let best = select_best_match(&parsed, &results).expect("expected best match");
+
+        assert_eq!(best.tmdb_id, 2);
+    }
+
+    #[test]
+    fn select_best_match_falls_back_to_first_when_no_exact_match() {
+        let parsed = parsed_filename("Unknown Film", Some(2023));
+        let results = vec![
+            tmdb_result(10, "Possible Match", Some(2023)),
+            tmdb_result(11, "Another Match", Some(2023)),
+        ];
+
+        let best = select_best_match(&parsed, &results).expect("expected fallback match");
+
+        assert_eq!(best.tmdb_id, 10);
+    }
+
+    #[test]
+    fn scan_directory_only_returns_top_level_video_files() {
+        let temp = TempDir::new().expect("temp dir");
+        let root = temp.path();
+        let nested_dir = root.join("nested");
+        std::fs::create_dir_all(&nested_dir).expect("create nested dir");
+
+        let top_level_video = root.join("movie.mkv");
+        let top_level_text = root.join("readme.txt");
+        let nested_video = nested_dir.join("nested.mp4");
+
+        std::fs::write(&top_level_video, b"video").expect("write top level video");
+        std::fs::write(&top_level_text, b"text").expect("write top level text");
+        std::fs::write(&nested_video, b"video").expect("write nested video");
+
+        let files = MetadataService::scan_directory(root);
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files[0], top_level_video);
+    }
+
+    #[test]
+    fn compute_file_hash_reads_entire_small_file() {
+        let temp = TempDir::new().expect("temp dir");
+        let path = temp.path().join("sample.bin");
+        let data = b"small-file-data";
+        std::fs::write(&path, data).expect("write sample file");
+
+        let hash = MetadataService::compute_file_hash(&path, 1024).expect("hash small file");
+        let expected = format!("{:x}", Sha256::digest(data));
+
+        assert_eq!(hash, expected);
+    }
+
+    #[test]
+    fn compute_file_hash_uses_head_and_tail_for_large_files() {
+        let temp = TempDir::new().expect("temp dir");
+        let path = temp.path().join("large.bin");
+        let sample_size = 8u64;
+
+        let mut file = std::fs::File::create(&path).expect("create large file");
+        file.write_all(b"ABCDEFGHmiddle-data12345678").expect("write large file");
+        drop(file);
+
+        let hash = MetadataService::compute_file_hash(&path, sample_size).expect("hash large file");
+
+        let mut hasher = Sha256::new();
+        hasher.update(b"ABCDEFGH");
+        hasher.update(b"12345678");
+        let expected = format!("{:x}", hasher.finalize());
+
+        assert_eq!(hash, expected);
     }
 }

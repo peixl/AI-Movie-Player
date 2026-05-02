@@ -17,7 +17,7 @@ fn response_style_guide() -> &'static str {
 pub fn build_general_context() -> String {
     let mut ctx = String::from(
         "You are the cinematic intelligence inside AI-Movie-Player, an AI-native movie player created by ifq.ai. \
-         Help the user choose better films, notice meaningful details, and enjoy cinema more deeply.\n\n"
+         Help the user choose better films, notice meaningful details, and enjoy cinema more deeply.\n\n",
     );
     ctx.push_str(response_style_guide());
     ctx.push_str("\n\n");
@@ -59,25 +59,25 @@ pub fn build_movie_context(movie: &Movie) -> String {
 pub mod prompts {
     /// Analyze the movie's themes, symbolism, and deeper meaning
     pub fn deep_analysis() -> &'static str {
-           "请用中英双语，分析这部电影的核心主题、人物关系、影像风格、声音设计与文化语境。\
+        "请用中英双语，分析这部电影的核心主题、人物关系、影像风格、声音设计与文化语境。\
             Explain what makes it distinct in cinema history, and keep the tone elegant, precise, and engaging."
     }
 
     /// Explain the ending
     pub fn explain_ending() -> &'static str {
-           "请用中英双语详细解释这部电影的结局：它意味着什么？有哪些合理解读？\
+        "请用中英双语详细解释这部电影的结局：它意味着什么？有哪些合理解读？\
             The user is ready for spoilers, so you can discuss the ending directly."
     }
 
     /// Recommend similar movies
     pub fn similar_movies() -> &'static str {
-           "请用中英双语推荐 5 部相似电影。For each film, explain the exact connection in tone, theme, form, or emotional effect. \
+        "请用中英双语推荐 5 部相似电影。For each film, explain the exact connection in tone, theme, form, or emotional effect. \
             Include a balance of widely loved classics and at least one hidden gem."
     }
 
     /// Fun trivia
     pub fn trivia() -> &'static str {
-           "请用中英双语分享 5 条真正有价值的幕后细节、彩蛋或制作故事。\
+        "请用中英双语分享 5 条真正有价值的幕后细节、彩蛋或制作故事。\
             Keep them surprising, concrete, and worth retelling after the movie."
     }
 
@@ -162,24 +162,14 @@ pub async fn chat_about_movie(
     user_message: &str,
 ) -> Result<String> {
     let system = build_movie_context(movie);
-    let messages = vec![
-        ChatMessage::system(&system),
-        ChatMessage::user(user_message),
-    ];
+    let messages = vec![ChatMessage::system(&system), ChatMessage::user(user_message)];
     client.chat(&messages).await
 }
 
 /// Get a quick AI insight about a movie using a preset prompt
-pub async fn quick_insight(
-    client: &AiClient,
-    movie: &Movie,
-    prompt: &str,
-) -> Result<String> {
+pub async fn quick_insight(client: &AiClient, movie: &Movie, prompt: &str) -> Result<String> {
     let system = build_movie_context(movie);
-    let messages = vec![
-        ChatMessage::system(&system),
-        ChatMessage::user(prompt),
-    ];
+    let messages = vec![ChatMessage::system(&system), ChatMessage::user(prompt)];
     client.chat(&messages).await
 }
 
@@ -197,4 +187,91 @@ pub async fn stream_chat(
     messages.push(ChatMessage::user(user_message));
 
     client.chat_stream(&messages, on_token).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{build_general_context, build_movie_context};
+    use crate::db::models::Movie;
+
+    fn sample_movie() -> Movie {
+        Movie {
+            id: 1,
+            tmdb_id: Some(101),
+            imdb_id: None,
+            title: "In the Mood for Love".to_string(),
+            title_cn: Some("花样年华".to_string()),
+            original_title: None,
+            year: Some(2000),
+            release_date: None,
+            poster_path: None,
+            poster_local: None,
+            backdrop_path: None,
+            backdrop_local: None,
+            rating: Some(8.1),
+            rating_count: None,
+            genres: Some("[\"Romance\",\"Drama\"]".to_string()),
+            runtime: None,
+            overview: Some(
+                "Two neighbors discover their spouses are having an affair.".to_string(),
+            ),
+            overview_cn: None,
+            tagline: None,
+            director: Some("Wong Kar-wai".to_string()),
+            cast_list: Some("[\"Tony Leung\",\"Maggie Cheung\"]".to_string()),
+            language: None,
+            country: None,
+            local_file_path: None,
+            file_size: None,
+            file_hash: None,
+            resolution: None,
+            source: None,
+            codec: None,
+            audio_langs: None,
+            added_date: "2026-05-03T00:00:00Z".to_string(),
+            updated_date: "2026-05-03T00:00:00Z".to_string(),
+            tmdb_data: None,
+        }
+    }
+
+    #[test]
+    fn build_general_context_contains_style_rules() {
+        let context = build_general_context();
+
+        assert!(context.contains("cinematic intelligence inside AI-Movie-Player"));
+        assert!(context.contains("Default to a concise bilingual structure"));
+        assert!(context.contains("Never invent facts"));
+    }
+
+    #[test]
+    fn build_movie_context_includes_present_movie_fields() {
+        let context = build_movie_context(&sample_movie());
+
+        assert!(context.contains("Current film / 当前影片"));
+        assert!(context.contains("- **Title / 片名:** In the Mood for Love"));
+        assert!(context.contains("- **Chinese Title / 中文名:** 花样年华"));
+        assert!(context.contains("- **Year / 年份:** 2000"));
+        assert!(context.contains("- **Director / 导演:** Wong Kar-wai"));
+        assert!(context.contains(
+            "- **Synopsis / 剧情简介:** Two neighbors discover their spouses are having an affair."
+        ));
+    }
+
+    #[test]
+    fn build_movie_context_omits_absent_optional_fields() {
+        let mut movie = sample_movie();
+        movie.title_cn = None;
+        movie.rating = None;
+        movie.director = None;
+        movie.cast_list = None;
+        movie.overview = None;
+
+        let context = build_movie_context(&movie);
+
+        assert!(!context.contains("Chinese Title / 中文名"));
+        assert!(!context.contains("TMDB Rating / 评分"));
+        assert!(!context.contains("Director / 导演"));
+        assert!(!context.contains("Cast / 演员"));
+        assert!(!context.contains("Synopsis / 剧情简介"));
+    }
 }
