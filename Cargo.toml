@@ -35,7 +35,7 @@ rusqlite = { version = "0.34", features = ["bundled", "serde_json"] }
 image = { version = "0.25", features = ["jpeg", "png", "webp"] }
 
 # File operations
-rfd = "0.15"
+rfd = "0.17"
 walkdir = "2"
 regex = "1"
 
