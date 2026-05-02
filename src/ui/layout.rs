@@ -1,4 +1,6 @@
-use egui::{Color32, Context, Rect, RichText, Rounding, Sense, Stroke, Ui, Vec2, pos2};
+use egui::{Color32, Context, Rect, RichText, Sense, Stroke, Ui, Vec2, pos2};
+
+use crate::ui::Rounding;
 
 /// Application views navigable from the sidebar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -229,7 +231,6 @@ fn draw_film_icon(
     color: Color32,
     seed: f32,
 ) {
-    let r = size / 2.0 - 2.0;
     let rect = Rect::from_center_size(center, egui::vec2(size * 0.75, size * 0.6));
     let stroke = Stroke::new(1.6, color);
     // Rounded rect outline
@@ -305,7 +306,12 @@ fn draw_add_folder_icon(
     let body =
         Rect::from_min_max(pos2(l, t + th * 0.3), pos2(center.x + fw / 2.0, center.y + fh / 2.0));
     painter.rect_filled(body, Rounding::same(3.0), color.linear_multiply(0.06));
-    painter.rect_stroke(body, Rounding::same(3.0), Stroke::new(1.2, color));
+    painter.rect_stroke(
+        body,
+        Rounding::same(3.0),
+        Stroke::new(1.2, color),
+        egui::StrokeKind::Middle,
+    );
     // Plus
     let cx = center.x + 1.0;
     let cy = center.y + 4.0;
@@ -328,7 +334,7 @@ fn draw_subtitle_icon(
     let bh = size * 0.38;
     let r = Rect::from_center_size(center - egui::vec2(0.0, 1.0), egui::vec2(bw, bh));
     painter.rect_filled(r, Rounding::same(5.0), color.linear_multiply(0.06));
-    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color));
+    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color), egui::StrokeKind::Middle);
     // Tail
     let tail = [
         wobble(center.x - 3.0, r.max.y, seed),
@@ -501,7 +507,7 @@ fn draw_chat_icon(
     let bh = size * 0.38;
     let r = Rect::from_center_size(center - egui::vec2(0.0, 1.0), egui::vec2(bw, bh));
     painter.rect_filled(r, Rounding::same(5.0), color.linear_multiply(0.06));
-    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color));
+    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color), egui::StrokeKind::Middle);
     let tail = [
         wobble(center.x - 3.0, r.max.y, seed),
         wobble(center.x + 1.0, r.max.y + 5.0, seed + 1.0),
@@ -538,11 +544,6 @@ fn draw_sparkle_icon(
             center.x + a2.cos() * r * 0.3,
             center.y + a2.sin() * r * 0.3,
             seed + 10.0 + i as f32,
-        );
-        let p_inner2 = wobble(
-            center.x + (a2 + std::f32::consts::TAU / 4.0).cos() * r * 0.3,
-            center.y + (a2 + std::f32::consts::TAU / 4.0).sin() * r * 0.3,
-            seed + 11.0 + i as f32,
         );
         let next_a = a + std::f32::consts::TAU / 4.0;
         let p_next =

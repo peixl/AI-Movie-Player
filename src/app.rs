@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use egui::{Color32, Rounding};
+use egui::Color32;
 use rusqlite::Connection;
 use tokio::sync::Mutex;
 
@@ -10,6 +10,7 @@ use crate::api::tmdb::TmdbClient;
 use crate::config::settings::AppSettings;
 use crate::db::{connection, models::Movie, movies, settings as db_settings};
 use crate::ui::{
+    Rounding,
     add_movie::{AddMovieWizard, WizardState},
     ai_chat_panel::AiChatPanel,
     ai_recommend_panel::AiRecommendPanel,
@@ -90,10 +91,7 @@ impl MovieBoxApp {
         let thumbnail_dir = app_data_dir.join("thumbnails");
         std::fs::create_dir_all(&thumbnail_dir).ok();
 
-        let settings = AppSettings::load_from_db(&|key| {
-            db_settings::get_setting(&db, key)
-                .map_err(|e| crate::util::error::AppError::Database(e))
-        });
+        let settings = AppSettings::load_from_db(&|key| db_settings::get_setting(&db, key));
 
         log::info!("Theme: {}, Language: {}", settings.theme, settings.tmdb_language);
 
@@ -188,28 +186,28 @@ impl MovieBoxApp {
 
         // Ctrl+1..6 to switch views
         if input.modifiers.ctrl {
-            if input.key_pressed(egui::Key::Num1) || input.key_pressed(egui::Key::Key1) {
+            if input.key_pressed(egui::Key::Num1) {
                 self.navigate_to(View::Library);
             }
-            if input.key_pressed(egui::Key::Num2) || input.key_pressed(egui::Key::Key2) {
+            if input.key_pressed(egui::Key::Num2) {
                 self.navigate_to(View::AddMovie);
             }
-            if input.key_pressed(egui::Key::Num3) || input.key_pressed(egui::Key::Key3) {
+            if input.key_pressed(egui::Key::Num3) {
                 self.navigate_to(View::SubtitleSearch);
             }
-            if input.key_pressed(egui::Key::Num4) || input.key_pressed(egui::Key::Key4) {
+            if input.key_pressed(egui::Key::Num4) {
                 self.navigate_to(View::BatchOps);
             }
-            if input.key_pressed(egui::Key::Num5) || input.key_pressed(egui::Key::Key5) {
+            if input.key_pressed(egui::Key::Num5) {
                 self.navigate_to(View::Watchlist);
             }
-            if input.key_pressed(egui::Key::Num6) || input.key_pressed(egui::Key::Key6) {
+            if input.key_pressed(egui::Key::Num6) {
                 self.navigate_to(View::Settings);
             }
-            if input.key_pressed(egui::Key::Num7) || input.key_pressed(egui::Key::Key7) {
+            if input.key_pressed(egui::Key::Num7) {
                 self.navigate_to(View::AiChat);
             }
-            if input.key_pressed(egui::Key::Num8) || input.key_pressed(egui::Key::Key8) {
+            if input.key_pressed(egui::Key::Num8) {
                 self.navigate_to(View::AiRecommend);
             }
             if input.key_pressed(egui::Key::F) {

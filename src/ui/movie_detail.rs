@@ -1,12 +1,13 @@
 //! Movie detail panel with cached poster textures.
 
-use egui::{Color32, RichText, Rounding, TextureHandle, Ui, Vec2};
+use egui::{Color32, RichText, TextureHandle, Ui, Vec2};
 use rusqlite::Connection;
 
 use crate::db::{
     models::{CastMember, Movie},
     subtitles as sub_db, watchlist,
 };
+use crate::ui::Rounding;
 
 /// Actions triggered from the movie detail panel.
 #[derive(PartialEq)]
@@ -48,7 +49,7 @@ impl MovieDetailPanel {
                         RichText::new("AI Insight / AI 解析").size(13.0).color(Color32::WHITE),
                     )
                     .fill(primary)
-                    .rounding(Rounding::same(6.0));
+                    .corner_radius(Rounding::same(6.0));
                     if ui.add(ai_btn).clicked() {
                         action = DetailAction::AiAnalyze;
                     }

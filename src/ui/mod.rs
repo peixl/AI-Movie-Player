@@ -15,6 +15,14 @@
 //! - [`watchlist_panel`]: Watchlist management interface.
 //! - [`widgets`]: Reusable UI components.
 
+pub(crate) struct Rounding;
+
+impl Rounding {
+    pub(crate) fn same(radius: f32) -> egui::CornerRadius {
+        egui::CornerRadius::same(radius.round().clamp(0.0, u8::MAX as f32) as u8)
+    }
+}
+
 pub mod add_movie;
 pub mod ai_chat_panel;
 pub mod ai_recommend_panel;

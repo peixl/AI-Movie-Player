@@ -232,18 +232,18 @@ mod tests {
         let (conn, _dir) = setup_db();
         settings::set_setting(&conn, "test_key", "test_value").unwrap();
         let value = settings::get_setting(&conn, "test_key").unwrap();
-        assert_eq!(value, "test_value");
+        assert_eq!(value, Some("test_value".to_string()));
 
         settings::set_setting(&conn, "test_key", "new_value").unwrap();
         let value = settings::get_setting(&conn, "test_key").unwrap();
-        assert_eq!(value, "new_value");
+        assert_eq!(value, Some("new_value".to_string()));
     }
 
     #[test]
     fn test_settings_missing_key() {
         let (conn, _dir) = setup_db();
-        let result = settings::get_setting(&conn, "nonexistent_key");
-        assert!(result.is_err());
+        let result = settings::get_setting(&conn, "nonexistent_key").unwrap();
+        assert!(result.is_none());
     }
 
     // --- Subtitles ---

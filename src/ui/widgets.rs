@@ -1,6 +1,8 @@
 //! Reusable UI components: star ratings, badges, and common widgets.
 
-use egui::{Color32, Response, RichText, Rounding, Ui, Vec2};
+use egui::{Color32, Response, RichText, Ui, Vec2};
+
+use crate::ui::Rounding;
 
 /// Render a star rating display (1-10 scale converted to 5 stars).
 pub fn star_rating(ui: &mut Ui, rating: f64, max_stars: usize) -> Response {
@@ -92,9 +94,9 @@ pub fn confirm_dialog(
     let mut result = None;
     let dim = Color32::from_rgb(100, 100, 115);
 
-    egui::Frame::none()
+    egui::Frame::NONE
         .fill(Color32::from_rgba_premultiplied(0, 0, 0, 180))
-        .rounding(Rounding::same(12.0))
+        .corner_radius(Rounding::same(12.0))
         .inner_margin(egui::vec2(24.0, 20.0))
         .show(ui, |ui| {
             ui.set_width(320.0);
@@ -118,7 +120,7 @@ pub fn confirm_dialog(
 
 /// Simple modal overlay helper — use to wrap content that should appear on top
 pub fn modal_overlay<R>(ui: &mut Ui, content: impl FnOnce(&mut Ui) -> R) -> R {
-    egui::Frame::none()
+    egui::Frame::NONE
         .fill(Color32::from_rgba_premultiplied(0, 0, 0, 160))
         .inner_margin(egui::vec2(32.0, 24.0))
         .show(ui, |ui| {

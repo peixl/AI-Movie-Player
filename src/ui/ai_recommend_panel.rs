@@ -2,11 +2,12 @@
 
 use std::sync::{Arc, Mutex};
 
-use egui::{Color32, Frame, RichText, Rounding, ScrollArea};
+use egui::{Color32, Frame, RichText, ScrollArea};
 
 use crate::ai::recommend;
 use crate::api::ai::AiClient;
 use crate::db::models::Movie;
+use crate::ui::Rounding;
 
 #[derive(Clone, PartialEq)]
 enum LoadState {
@@ -135,7 +136,7 @@ impl AiRecommendPanel {
                 runtime,
                 is_dark,
                 |client, library| {
-                    let system = recommend::build_library_context(library, &[]);
+                    let system = recommend::build_library_context(&library, &[]);
                     let msg = "Based on my movie library, suggest 5 films I should watch next from my own collection. \
                               For each: explain why it fits my taste. Format: **Title** (Year) — Why watch it now.";
                     Box::pin(async move {
@@ -155,7 +156,7 @@ impl AiRecommendPanel {
                 runtime,
                 is_dark,
                 |client, library| {
-                    let system = recommend::build_library_context(library, &[]);
+                    let system = recommend::build_library_context(&library, &[]);
                     let msg = "Analyze my movie taste profile. What genres do I love? What directors? \
                               What era? What does my collection reveal about my personality? \
                               Be specific and reference actual films in my library. Make it fun.";
@@ -180,7 +181,7 @@ impl AiRecommendPanel {
             runtime,
             is_dark,
             |client, library| {
-                let system = recommend::build_library_context(library, &[]);
+                let system = recommend::build_library_context(&library, &[]);
                 let msg = "Based on my library, recommend 8 real films I DON'T own but would absolutely love. \
                           Include a mix of classics and hidden gems. \
                           Format: **Title** (Year) — Director — Why you'll love it.";
@@ -225,9 +226,9 @@ impl AiRecommendPanel {
 
         let current_state = state.get();
 
-        Frame::none()
+        Frame::NONE
             .fill(bg)
-            .rounding(Rounding::same(10.0))
+            .corner_radius(Rounding::same(10.0))
             .inner_margin(egui::Vec2::splat(12.0))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
@@ -243,7 +244,7 @@ impl AiRecommendPanel {
                                         .color(Color32::WHITE),
                                 )
                                 .fill(primary)
-                                .rounding(Rounding::same(6.0));
+                                .corner_radius(Rounding::same(6.0));
                                 if ui.add(btn).clicked() {
                                     if let Some(client) = client.as_ref() {
                                         state.set(LoadState::Loading(
@@ -334,7 +335,7 @@ impl AiRecommendPanel {
                                     ui.horizontal(|ui| {
                                         ui.label(RichText::new("•").size(12.0).color(primary));
                                         ui.label(
-                                            RichText::new(&line[1..].trim()).size(12.0).color(text),
+                                            RichText::new(line[1..].trim()).size(12.0).color(text),
                                         );
                                     });
                                 } else {

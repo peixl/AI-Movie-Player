@@ -1,4 +1,6 @@
-use egui::{Color32, Rounding, Stroke, Style, Visuals};
+use egui::{Color32, Stroke, Style, Visuals};
+
+use crate::ui::Rounding;
 
 /// Color palette for dark and light themes.
 pub struct AppTheme {
@@ -46,11 +48,11 @@ pub const LIGHT_THEME: AppTheme = AppTheme {
 pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     let theme = if is_dark { &DARK_THEME } else { &LIGHT_THEME };
 
-    let mut visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
+    let visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
 
     let egui_style = Style {
         visuals: Visuals {
-            window_rounding: Rounding::same(8.0),
+            window_corner_radius: Rounding::same(8.0),
             window_shadow: epaint::Shadow {
                 offset: [0, 2].into(),
                 blur: 12,

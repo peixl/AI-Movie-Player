@@ -21,9 +21,7 @@ pub struct SettingsPanel {
 
 impl SettingsPanel {
     pub fn new(db: &Connection) -> Self {
-        let settings = AppSettings::load_from_db(&|key| {
-            db_settings::get_setting(db, key).map_err(|e| crate::util::error::AppError::Database(e))
-        });
+        let settings = AppSettings::load_from_db(&|key| db_settings::get_setting(db, key));
 
         Self {
             tmdb_key: settings.tmdb_api_key,

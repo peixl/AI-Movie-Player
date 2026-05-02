@@ -62,7 +62,7 @@ impl BatchOpsPanel {
                 .button(
                     RichText::new("Start Batch Scan / 开始批量扫描")
                         .size(14.0)
-                        .fill(Color32::WHITE),
+                        .color(Color32::WHITE),
                 )
                 .clicked()
             {

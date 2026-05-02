@@ -2,7 +2,9 @@
 //! Each icon uses imperfect curves, varying stroke widths, and organic shapes
 //! to achieve a warm, hand-sketched feel.
 
-use egui::{Color32, Pos2, Rect, Rounding, Shape, Stroke, Ui, pos2, vec2};
+use egui::{Color32, Pos2, Rect, Shape, Stroke, Ui, pos2, vec2};
+
+use crate::ui::Rounding;
 
 /// Wobble offset for a point to create hand-drawn imperfection.
 /// Returns offset that varies with position to avoid repeating patterns.
@@ -35,7 +37,7 @@ fn sketched_line(
     let w3 = wobble(p2.x, p2.y, seed + 2.0);
 
     let shape = Shape::CubicBezier(epaint::CubicBezierShape {
-        points: [p1 + w1, cp + w2, cp + w2, p2 + w3],
+        points: [w1, w2, w2, w3],
         closed: false,
         fill: Color32::TRANSPARENT,
         stroke: Stroke::new(width, color),
@@ -88,7 +90,6 @@ fn sketched_rect(
 pub fn icon_film(ui: &mut Ui, size: f32, color: Color32) {
     let painter = ui.painter();
     let center = ui.cursor().min + vec2(size / 2.0, size / 2.0);
-    let r = size / 2.0 - 2.0;
     let seed = 42.0;
 
     // Outer rounded rectangle
@@ -224,7 +225,7 @@ pub fn icon_subtitle(ui: &mut Ui, size: f32, color: Color32) {
     let rect = Rect::from_center_size(center - vec2(0.0, 2.0), vec2(bubble_w, bubble_h));
     let rounding = Rounding::same(6.0);
     painter.rect_filled(rect, rounding, color.linear_multiply(0.08));
-    painter.rect_stroke(rect, rounding, Stroke::new(1.5, color));
+    painter.rect_stroke(rect, rounding, Stroke::new(1.5, color), egui::StrokeKind::Middle);
 
     // Tail
     let tail_pts = [
@@ -571,7 +572,7 @@ pub fn icon_empty_library(ui: &mut Ui, size: f32, color: Color32) {
     // Oversized film frame
     let frame = Rect::from_center_size(center, vec2(size * 0.7, size * 0.5));
     let stroke = Stroke::new(1.5, color.linear_multiply(0.4));
-    painter.rect_stroke(frame, Rounding::same(4.0), stroke);
+    painter.rect_stroke(frame, Rounding::same(4.0), stroke, egui::StrokeKind::Middle);
 
     // Question mark in center
     let qm_color = color.linear_multiply(0.5);
@@ -639,7 +640,7 @@ pub fn icon_chat(ui: &mut Ui, size: f32, color: Color32) {
     let bh = size * 0.38;
     let r = Rect::from_center_size(center - vec2(0.0, 1.0), vec2(bw, bh));
     painter.rect_filled(r, Rounding::same(5.0), color.linear_multiply(0.06));
-    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color));
+    painter.rect_stroke(r, Rounding::same(5.0), Stroke::new(1.2, color), egui::StrokeKind::Middle);
     // Tail
     let tail = [
         wobble(center.x - 3.0, r.max.y, seed),

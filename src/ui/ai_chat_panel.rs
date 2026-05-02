@@ -2,12 +2,13 @@
 
 use std::sync::{Arc, Mutex};
 
-use egui::{Color32, Frame, RichText, Rounding, ScrollArea, Sense, Stroke};
+use egui::{Color32, Frame, RichText, ScrollArea, Sense, Stroke};
 use rusqlite::Connection;
 
 use crate::ai::chat;
 use crate::api::ai::{AiClient, ChatMessage};
 use crate::db::{models::Movie, watchlist};
+use crate::ui::Rounding;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum WorkflowKind {
@@ -361,7 +362,7 @@ impl AiChatPanel {
                         RichText::new("Open Settings / 打开设置").size(12.0).color(Color32::WHITE),
                     )
                     .fill(primary)
-                    .rounding(Rounding::same(6.0));
+                    .corner_radius(Rounding::same(6.0));
                     if ui.add(btn).clicked() {
                         navigate_settings = true;
                     }
@@ -404,9 +405,9 @@ impl AiChatPanel {
         // Movie picker
         if self.presets_visible {
             ui.add_space(4.0);
-            Frame::none()
+            Frame::NONE
                 .fill(bg)
-                .rounding(Rounding::same(8.0))
+                .corner_radius(Rounding::same(8.0))
                 .inner_margin(egui::Vec2::splat(8.0))
                 .show(ui, |ui| {
                     ui.add(
@@ -448,9 +449,9 @@ impl AiChatPanel {
         ui.add_space(8.0);
 
         // Chat message area
-        let chat_frame = Frame::none()
+        let chat_frame = Frame::NONE
             .fill(bg)
-            .rounding(Rounding::same(10.0))
+            .corner_radius(Rounding::same(10.0))
             .inner_margin(egui::Vec2::splat(10.0));
 
         chat_frame.show(ui, |ui| {
@@ -635,9 +636,9 @@ impl AiChatPanel {
         ui.add_space(8.0);
 
         // Preset quick questions
-        Frame::none()
+        Frame::NONE
             .fill(bg.linear_multiply(0.3))
-            .rounding(Rounding::same(8.0))
+            .corner_radius(Rounding::same(8.0))
             .inner_margin(egui::Vec2::splat(8.0))
             .show(ui, |ui| {
                 ui.label(
@@ -679,10 +680,10 @@ impl AiChatPanel {
                     };
 
                     for (label, prompt) in presets {
-                        let btn = egui::Button::new(RichText::new(label).size(11.0))
+                        let btn = egui::Button::new(RichText::new(*label).size(11.0))
                             .fill(Color32::TRANSPARENT)
                             .stroke(Stroke::new(1.0, primary.linear_multiply(0.4)))
-                            .rounding(Rounding::same(14.0));
+                            .corner_radius(Rounding::same(14.0));
                         if ui.add(btn).clicked() {
                             self.send_message(
                                 client,
@@ -718,7 +719,7 @@ impl AiChatPanel {
             let send_btn =
                 egui::Button::new(RichText::new("Send / 发送").size(13.0).color(Color32::WHITE))
                     .fill(if can_send { primary } else { primary.linear_multiply(0.3) })
-                    .rounding(Rounding::same(6.0));
+                    .corner_radius(Rounding::same(6.0));
 
             let send_clicked = ui.add_enabled(can_send, send_btn).clicked();
             let enter_pressed =
@@ -826,9 +827,9 @@ impl AiChatPanel {
     ) {
         let workflow_status = self.workflow_status.lock().unwrap().clone();
 
-        Frame::none()
+        Frame::NONE
             .fill(bg.linear_multiply(0.35))
-            .rounding(Rounding::same(10.0))
+            .corner_radius(Rounding::same(10.0))
             .inner_margin(egui::Vec2::splat(12.0))
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
@@ -889,7 +890,7 @@ impl AiChatPanel {
                             .min_size(egui::vec2(column.available_width(), 42.0))
                             .fill(Color32::TRANSPARENT)
                             .stroke(Stroke::new(1.0, primary.linear_multiply(0.35)))
-                            .rounding(Rounding::same(10.0));
+                            .corner_radius(Rounding::same(10.0));
 
                             if column.add_enabled(!is_loading, button).clicked() {
                                 self.run_workflow(workflow.kind, client, runtime);
@@ -964,13 +965,13 @@ impl AiChatPanel {
                         let mut pending_save: Option<WorkflowCard> = None;
 
                         for card in self.workflow_cards.clone() {
-                            Frame::none()
+                            Frame::NONE
                                 .fill(if is_dark {
                                     Color32::from_rgb(24, 24, 34)
                                 } else {
                                     Color32::from_rgb(245, 246, 250)
                                 })
-                                .rounding(Rounding::same(10.0))
+                                .corner_radius(Rounding::same(10.0))
                                 .inner_margin(egui::Vec2::splat(12.0))
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
@@ -1015,10 +1016,10 @@ impl AiChatPanel {
                                     ui.add_space(8.0);
 
                                     for section in &card.sections {
-                                        Frame::none()
+                                        Frame::NONE
                                             .fill(Color32::TRANSPARENT)
                                             .stroke(Stroke::new(1.0, primary.linear_multiply(0.18)))
-                                            .rounding(Rounding::same(8.0))
+                                            .corner_radius(Rounding::same(8.0))
                                             .inner_margin(egui::Vec2::splat(10.0))
                                             .show(ui, |ui| {
                                                 ui.label(

@@ -1,11 +1,12 @@
 //! Visual poster grid browsing with LRU texture cache.
 
-use egui::{Color32, Context, RichText, Rounding, Sense, TextureHandle, Ui, Vec2};
+use egui::{Color32, Context, RichText, Sense, TextureHandle, Ui, Vec2};
 use rusqlite::Connection;
 use std::collections::{HashMap, VecDeque};
 
 use crate::db::models::MovieSummary;
 use crate::db::movies;
+use crate::ui::Rounding;
 
 const POSTER_WIDTH: f32 = 160.0;
 const POSTER_HEIGHT: f32 = 240.0;
@@ -286,6 +287,7 @@ impl PosterWall {
                 poster_img_rect.expand(2.0),
                 rounding,
                 egui::Stroke::new(2.0, Color32::from_rgb(99, 102, 241)),
+                egui::StrokeKind::Middle,
             );
         }
 
