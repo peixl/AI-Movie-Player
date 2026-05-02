@@ -4,7 +4,14 @@
       "Bash(git *)",
       "Bash(cargo build *)",
       "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
-      "Bash(gh --version)"
+      "Bash(gh --version)",
+      "Bash(gh run *)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install *)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo doc *)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh auth *)"
     ]
   }
 }
