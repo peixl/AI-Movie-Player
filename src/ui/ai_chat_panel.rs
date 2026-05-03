@@ -493,7 +493,7 @@ impl AiChatPanel {
                         ui.add_space(20.0);
                     }
 
-                    for (i, entry) in self.history.iter().enumerate() {
+                    for entry in self.history.iter() {
                         match entry.role.as_str() {
                             "system" => {
                                 ui.vertical_centered(|ui| {

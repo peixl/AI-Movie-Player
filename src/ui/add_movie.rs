@@ -224,17 +224,8 @@ impl AddMovieWizard {
         &self.found_files
     }
 
-    pub fn set_search_results(&mut self, results: Vec<(PathBuf, Vec<TmdbSearchResult>)>) {
-        self.search_results = results;
-        self.state = WizardState::ShowResults;
-    }
-
     pub fn add_log(&mut self, msg: String) {
         self.log_messages.push(msg);
     }
 
-    pub fn set_import_done(&mut self, movies: Vec<Movie>) {
-        self.imported_movies = movies;
-        self.state = WizardState::Done;
-    }
 }

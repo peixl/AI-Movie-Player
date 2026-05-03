@@ -45,47 +45,6 @@ fn sketched_line(
     painter.add(shape);
 }
 
-fn sketched_rect(
-    painter: &egui::Painter,
-    rect: Rect,
-    color: Color32,
-    stroke: f32,
-    fill: Color32,
-    seed: f32,
-) {
-    let r = 4.0; // corner radius
-    let tl = rect.min;
-    let tr = pos2(rect.max.x, rect.min.y);
-    let br = rect.max;
-    let bl = pos2(rect.min.x, rect.max.y);
-
-    // Fill
-    painter.rect_filled(rect, Rounding::same(r), fill);
-
-    // Sketch each edge with slight curves
-    let points = [
-        wobble(tl.x, tl.y, seed),
-        wobble(tr.x, tr.y, seed + 1.0),
-        wobble(br.x, br.y, seed + 2.0),
-        wobble(bl.x, bl.y, seed + 3.0),
-    ];
-
-    // Draw each side as a cubic bezier
-    for i in 0..4 {
-        let p1 = points[i];
-        let p2 = points[(i + 1) % 4];
-        let mid = pos2((p1.x + p2.x) / 2.0, (p1.y + p2.y) / 2.0);
-        let normal = (p2 - p1).normalized().rot90() * stroke;
-        let cp = mid + normal;
-        painter.add(Shape::CubicBezier(epaint::CubicBezierShape {
-            points: [p1, cp, cp, p2],
-            closed: false,
-            fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(stroke, color),
-        }));
-    }
-}
-
 /// Film reel / movie icon
 pub fn icon_film(ui: &mut Ui, size: f32, color: Color32) {
     let painter = ui.painter();

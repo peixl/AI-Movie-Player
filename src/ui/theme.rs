@@ -79,11 +79,6 @@ pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     ctx.set_style(egui_style);
 }
 
-/// Get the current theme based on dark mode flag.
-pub fn current_theme(is_dark: bool) -> &'static AppTheme {
-    if is_dark { &DARK_THEME } else { &LIGHT_THEME }
-}
-
 pub fn text_color(is_dark: bool) -> Color32 {
     if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) }
 }
@@ -92,16 +87,8 @@ pub fn dim_color(is_dark: bool) -> Color32 {
     if is_dark { Color32::from_rgb(150, 150, 165) } else { Color32::from_rgb(100, 100, 115) }
 }
 
-pub fn muted_color(is_dark: bool) -> Color32 {
-    if is_dark { Color32::from_rgb(120, 120, 130) } else { Color32::from_rgb(140, 140, 155) }
-}
-
 pub fn primary_color() -> Color32 {
     Color32::from_rgb(99, 102, 241)
-}
-
-pub fn bg_color(is_dark: bool) -> Color32 {
-    if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) }
 }
 
 pub fn success_color(is_dark: bool) -> Color32 {
