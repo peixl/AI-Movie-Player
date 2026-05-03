@@ -389,11 +389,28 @@ impl eframe::App for MovieBoxApp {
             match self.layout.active_view {
                 View::Library => {
                     if self.show_detail {
-                        if let Some(movie) = self.selected_movie.clone() {
+                        if let Some(ref movie) = self.selected_movie {
                             ui.horizontal(|ui| {
-                                if ui.button("← 返回 / Back").clicked() {
+                                if ui.button("返回 / Back").clicked() {
                                     self.close_detail();
                                 }
+                                ui.heading(&movie.title);
+                            });
+                            ui.add_space(4.0);
+                            let detail_action = self.detail_panel.show(ui, movie, &self.db, self.is_dark);
+
+                            match detail_action {
+                                crate::ui::movie_detail::DetailAction::AiAnalyze => {
+                                    self.ai_chat_panel.select_movie(Some(movie.clone()));
+                                    self.navigate_to(View::AiChat);
+                                }
+                                crate::ui::movie_detail::DetailAction::SearchSubtitles => {
+                                    self.subtitle_panel.select_movie(movie.id);
+                                    self.navigate_to(View::SubtitleSearch);
+                                }
+                                _ => {}
+                            }
+                        }
                                 ui.heading(&movie.title);
                             });
                             ui.add_space(4.0);
