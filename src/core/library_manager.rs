@@ -135,6 +135,7 @@ pub struct LibraryStats {
 
 #[cfg(test)]
 mod tests {
+    use rusqlite::Connection;
     use tempfile::TempDir;
 
     use crate::db::{connection, models::Movie};

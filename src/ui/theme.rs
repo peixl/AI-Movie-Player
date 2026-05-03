@@ -1,4 +1,4 @@
-use egui::{Color32, Stroke, Style, Visuals};
+use egui::{Color32, Stroke, Style, Visuals, epaint};
 
 use crate::ui::Rounding;
 
@@ -48,31 +48,37 @@ pub const LIGHT_THEME: AppTheme = AppTheme {
 pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     let theme = if is_dark { &DARK_THEME } else { &LIGHT_THEME };
 
-    let visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
+    let mut visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
+    visuals.window_corner_radius = Rounding::same(8.0);
+    visuals.window_shadow = epaint::Shadow {
+        offset: [0, 2],
+        blur: 12,
+        spread: 0,
+        color: Color32::from_black_alpha(if is_dark { 80 } else { 30 }),
+    };
+    visuals.panel_fill = theme.bg;
+    visuals.window_fill = theme.surface;
+    visuals.faint_bg_color = theme.surface;
+    visuals.extreme_bg_color = theme.bg;
+    visuals.hyperlink_color = theme.primary;
+    visuals.warn_fg_color = theme.warning;
+    visuals.error_fg_color = theme.error;
+    visuals.selection = egui::style::Selection {
+        bg_fill: theme.primary.linear_multiply(0.3),
+        stroke: Stroke::new(1.0, theme.primary),
+    };
+    visuals.widgets.noninteractive.fg_stroke.color = theme.text;
+    visuals.widgets.inactive.bg_fill = theme.surface;
+    visuals.widgets.inactive.weak_bg_fill = theme.surface;
+    visuals.widgets.hovered.bg_fill = theme.surface_light;
+    visuals.widgets.hovered.weak_bg_fill = theme.surface_light;
+    visuals.widgets.active.bg_fill = theme.surface_light;
+    visuals.widgets.active.weak_bg_fill = theme.surface_light;
+    visuals.widgets.open.bg_fill = theme.surface_light;
+    visuals.widgets.open.weak_bg_fill = theme.surface_light;
 
     let egui_style = Style {
-        visuals: Visuals {
-            window_corner_radius: Rounding::same(8.0),
-            window_shadow: epaint::Shadow {
-                offset: [0, 2].into(),
-                blur: 12,
-                spread: 0,
-                color: Color32::from_black_alpha(if is_dark { 80 } else { 30 }),
-            },
-            panel_fill: theme.bg,
-            window_fill: theme.surface,
-            widget_open: theme.surface_light,
-            widget_hover: theme.surface_light,
-            widget_active: theme.surface_light,
-            faint_bg_color: theme.surface,
-            extreme_bg_color: theme.bg,
-            selection: egui::style::Selection {
-                bg_fill: theme.primary.linear_multiply(0.3),
-                stroke: Stroke::new(1.0, theme.primary),
-            },
-            hyperlink_color: theme.primary,
-            ..visuals
-        },
+        visuals,
         ..Default::default()
     };
 

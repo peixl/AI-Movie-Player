@@ -2,7 +2,7 @@
 //! Each icon uses imperfect curves, varying stroke widths, and organic shapes
 //! to achieve a warm, hand-sketched feel.
 
-use egui::{Color32, Pos2, Rect, Shape, Stroke, Ui, pos2, vec2};
+use egui::{Color32, Pos2, Rect, Shape, Stroke, Ui, epaint, pos2, vec2};
 
 use crate::ui::Rounding;
 
