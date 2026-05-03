@@ -17,7 +17,13 @@
       "Bash(Start-Sleep *)",
       "Bash(cargo fmt *)",
       "Bash(curl -s \"https://api.github.com/repos/peixl/AI-Movie-Player/actions/runs/25269283075\")",
-      "Bash(curl -s \"https://api.github.com/repos/peixl/AI-Movie-Player/actions/runs?per_page=3\")"
+      "Bash(curl -s \"https://api.github.com/repos/peixl/AI-Movie-Player/actions/runs?per_page=3\")",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__take_screenshot",
+      "Bash(where gh *)"
     ]
   }
 }
