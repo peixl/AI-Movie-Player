@@ -12,9 +12,10 @@ permissions:
 jobs:
   dependency-review:
     name: Review dependency changes
+    if: ${{ vars.ENABLE_DEPENDENCY_REVIEW == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v4.9.0
         with:
           fail-on-severity: moderate
