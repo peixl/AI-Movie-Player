@@ -135,14 +135,13 @@ pub struct LibraryStats {
 
 #[cfg(test)]
 mod tests {
-    use rusqlite::Connection;
     use tempfile::TempDir;
 
     use crate::db::{connection, models::Movie};
 
     use super::LibraryManager;
 
-    fn setup_db() -> (Connection, TempDir) {
+    fn setup_db() -> (rusqlite::Connection, TempDir) {
         let dir = TempDir::new().expect("Failed to create temp dir");
         let conn =
             connection::open_database(&dir.path().to_path_buf()).expect("Failed to open test DB");
