@@ -227,5 +227,4 @@ impl AddMovieWizard {
     pub fn add_log(&mut self, msg: String) {
         self.log_messages.push(msg);
     }
-
 }
