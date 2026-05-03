@@ -268,7 +268,7 @@ impl AiRecommendPanel {
                                     }
                                 }
                             }
-                            LoadState::Loading(ref msg) => {
+                            LoadState::Loading(msg) => {
                                 let shimmer = crate::ui::animation::shimmer(
                                     primary.linear_multiply(0.3),
                                     primary.linear_multiply(0.6),
@@ -316,7 +316,7 @@ impl AiRecommendPanel {
                             .italics(),
                         );
                     }
-                    LoadState::Done(ref content) => {
+                    LoadState::Done(content) => {
                         ui.add_space(4.0);
                         ScrollArea::vertical().max_height(350.0).show(ui, |ui| {
                             for line in content.lines() {
@@ -344,7 +344,7 @@ impl AiRecommendPanel {
                             }
                         });
                     }
-                    LoadState::Error(ref err) => {
+                    LoadState::Error(err) => {
                         ui.add_space(4.0);
                         ui.label(
                             RichText::new(format!("错误 / Error: {}", err))

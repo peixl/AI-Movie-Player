@@ -360,7 +360,7 @@ fn draw_subtitle_icon(
 fn draw_bolt_icon(
     painter: &egui::Painter,
     center: egui::Pos2,
-    size: f32,
+    _size: f32,
     color: Color32,
     seed: f32,
 ) {

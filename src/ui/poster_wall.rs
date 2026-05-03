@@ -102,7 +102,7 @@ impl PosterWall {
         }
 
         // Filter bar
-        self.show_filter_bar(ui, is_dark);
+        self.show_filter_bar(ui);
 
         ui.add_space(8.0);
 
@@ -124,7 +124,7 @@ impl PosterWall {
             let mut row = 0;
             let mut col = 0;
 
-            for movie in &self.movies {
+            for index in 0..self.movies.len() {
                 if col == 0 {
                     ui.horizontal(|ui| {
                         ui.add_space(GAP);
@@ -140,10 +140,11 @@ impl PosterWall {
 
                 // Only render visible posters
                 if ui.is_rect_visible(poster_rect) {
+                    let movie = self.movies[index].clone();
                     self.render_poster_card(
                         ui,
                         ctx,
-                        movie,
+                        &movie,
                         actual_poster_width,
                         actual_poster_height,
                         text_color,
@@ -331,9 +332,7 @@ impl PosterWall {
         }
     }
 
-    fn show_filter_bar(&mut self, ui: &mut Ui, is_dark: bool) {
-        let primary = Color32::from_rgb(99, 102, 241);
-
+    fn show_filter_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             // Search
             let mut search = self.filter.search.clone().unwrap_or_default();
