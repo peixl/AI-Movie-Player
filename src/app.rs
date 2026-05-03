@@ -359,11 +359,13 @@ impl eframe::App for MovieBoxApp {
         }
 
         // Handle poster wall selection → show detail
-        if let Some(movie_id) = self.poster_wall.selected_id
-            && self.layout.active_view == View::Library
-            && let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id)
-        {
-            self.open_detail(movie);
+        #[allow(clippy::collapsible_if)]
+        if let Some(movie_id) = self.poster_wall.selected_id {
+            if self.layout.active_view == View::Library {
+                if let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id) {
+                    self.open_detail(movie);
+                }
+            }
         }
 
         // --- Refresh cached data if dirty ---
@@ -471,35 +473,37 @@ impl eframe::App for MovieBoxApp {
                     self.subtitle_panel.show(ui, &self.db, self.is_dark);
 
                     // Handle subtitle search trigger
-                    if self.subtitle_panel.searching
-                        && let Some(movie_id) = self.subtitle_panel.movie_id
-                        && let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id)
-                    {
-                        let query = crate::db::models::SubtitleQuery {
-                            title: movie.title.clone(),
-                            year: movie.year,
-                            file_hash: movie.file_hash.clone(),
-                            languages: self.settings.subtitle_languages.clone(),
-                            imdb_id: movie.imdb_id.clone(),
-                        };
+                    #[allow(clippy::collapsible_if)]
+                    if self.subtitle_panel.searching {
+                        if let Some(movie_id) = self.subtitle_panel.movie_id {
+                            if let Ok(Some(movie)) = movies::get_movie_by_id(&self.db, movie_id) {
+                                let query = crate::db::models::SubtitleQuery {
+                                    title: movie.title.clone(),
+                                    year: movie.year,
+                                    file_hash: movie.file_hash.clone(),
+                                    languages: self.settings.subtitle_languages.clone(),
+                                    imdb_id: movie.imdb_id.clone(),
+                                };
 
-                        self.subtitle_panel.searching = false;
+                                self.subtitle_panel.searching = false;
 
-                        self.runtime.spawn(async move {
-                            match crate::core::subtitle_finder::SubtitleFinder::search_all_sources(&query).await {
-                                Ok(_results) => {
-                                    // Store results — for now, mark as done
-                                    // Full integration requires channel back to UI
-                                }
-                                Err(e) => {
-                                    log::warn!("Subtitle search failed: {}", e);
-                                }
+                                self.runtime.spawn(async move {
+                                    match crate::core::subtitle_finder::SubtitleFinder::search_all_sources(&query).await {
+                                        Ok(_results) => {
+                                            // Store results — for now, mark as done
+                                            // Full integration requires channel back to UI
+                                        }
+                                        Err(e) => {
+                                            log::warn!("Subtitle search failed: {}", e);
+                                        }
+                                    }
+                                });
+
+                                self.subtitle_panel.message = Some(
+                                    "正在搜索 OpenSubtitles、assrt.net 与 zimuku... / Searching subtitle sources...".into(),
+                                );
                             }
-                        });
-
-                        self.subtitle_panel.message = Some(
-                            "正在搜索 OpenSubtitles、assrt.net 与 zimuku... / Searching subtitle sources...".into(),
-                        );
+                        }
                     }
                 }
 
