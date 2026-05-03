@@ -333,7 +333,6 @@ impl eframe::App for MovieBoxApp {
             let client = self.tmdb_client.clone();
 
             self.runtime.spawn(async move {
-                let mut _search_results = Vec::new();
                 let client_guard = client.lock().await;
 
                 for file in &files {
@@ -343,14 +342,10 @@ impl eframe::App for MovieBoxApp {
                         .unwrap_or_default();
                     let parsed = crate::core::filename_parser::parse_filename(&filename);
 
-                    match client_guard.search_movies(&parsed.title, parsed.year).await {
-                        Ok(results) => {
-                            _search_results.push((file.clone(), results));
-                        }
-                        Err(e) => {
-                            log::warn!("TMDB search failed for {}: {}", filename, e);
-                            _search_results.push((file.clone(), vec![]));
-                        }
+                    if let Ok(results) = client_guard.search_movies(&parsed.title, parsed.year).await {
+                        log::info!("TMDB search results for {}: {} found", filename, results.len());
+                    } else {
+                        log::warn!("TMDB search failed for {}", filename);
                     }
                 }
                 // Results are stored via a channel or mutable state;
