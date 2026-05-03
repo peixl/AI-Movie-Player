@@ -77,10 +77,7 @@ pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     visuals.widgets.open.bg_fill = theme.surface_light;
     visuals.widgets.open.weak_bg_fill = theme.surface_light;
 
-    let egui_style = Style {
-        visuals,
-        ..Default::default()
-    };
+    let egui_style = Style { visuals, ..Default::default() };
 
     ctx.set_style(egui_style);
 }
