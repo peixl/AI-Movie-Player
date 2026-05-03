@@ -420,9 +420,7 @@ impl AiChatPanel {
                     ScrollArea::vertical().max_height(180.0).show(ui, |ui| {
                         for movie in library.iter().filter(|m| {
                             search_input.is_empty()
-                                || m.title
-                                    .to_lowercase()
-                                    .contains(&search_input.to_lowercase())
+                                || m.title.to_lowercase().contains(&search_input.to_lowercase())
                         }) {
                             let label = format!("{} ({})", movie.title, movie.year.unwrap_or(0));
                             if ui
