@@ -342,7 +342,9 @@ impl eframe::App for MovieBoxApp {
                         .unwrap_or_default();
                     let parsed = crate::core::filename_parser::parse_filename(&filename);
 
-                    if let Ok(results) = client_guard.search_movies(&parsed.title, parsed.year).await {
+                    if let Ok(results) =
+                        client_guard.search_movies(&parsed.title, parsed.year).await
+                    {
                         log::info!("TMDB search results for {}: {} found", filename, results.len());
                     } else {
                         log::warn!("TMDB search failed for {}", filename);
@@ -398,23 +400,6 @@ impl eframe::App for MovieBoxApp {
                             });
                             ui.add_space(4.0);
                             let detail_action = self.detail_panel.show(ui, movie, &self.db, self.is_dark);
-
-                            match detail_action {
-                                crate::ui::movie_detail::DetailAction::AiAnalyze => {
-                                    self.ai_chat_panel.select_movie(Some(movie.clone()));
-                                    self.navigate_to(View::AiChat);
-                                }
-                                crate::ui::movie_detail::DetailAction::SearchSubtitles => {
-                                    self.subtitle_panel.select_movie(movie.id);
-                                    self.navigate_to(View::SubtitleSearch);
-                                }
-                                _ => {}
-                            }
-                        }
-                                ui.heading(&movie.title);
-                            });
-                            ui.add_space(4.0);
-                            let detail_action = self.detail_panel.show(ui, &movie, &self.db, self.is_dark);
 
                             match detail_action {
                                 crate::ui::movie_detail::DetailAction::AiAnalyze => {
