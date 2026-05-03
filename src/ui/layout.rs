@@ -250,7 +250,7 @@ fn draw_film_icon(
             points: [p1, mid, mid, p2],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: stroke.into(),
+            stroke,
         }));
     }
     // Sprocket holes
@@ -458,7 +458,7 @@ fn draw_gear_icon(
             points: [p1, m, m, p2],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(1.2, color).into(),
+            stroke: Stroke::new(1.2, color),
         }));
     }
     painter.circle_filled(center, ir, color.linear_multiply(0.08));
@@ -488,7 +488,7 @@ fn draw_search_icon(
             points: [p1, m, m, p2],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(1.5, color).into(),
+            stroke: Stroke::new(1.5, color),
         }));
     }
     let hs = pos2(gc.x + gr * 0.7, gc.y + gr * 0.7);
