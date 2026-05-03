@@ -11,7 +11,13 @@
       "Bash(cargo clippy *)",
       "Bash(cargo doc *)",
       "WebFetch(domain:api.github.com)",
-      "Bash(gh auth *)"
+      "Bash(gh auth *)",
+      "Bash(cargo check *)",
+      "Bash(gh api *)",
+      "Bash(Start-Sleep *)",
+      "Bash(cargo fmt *)",
+      "Bash(curl -s \"https://api.github.com/repos/peixl/AI-Movie-Player/actions/runs/25269283075\")",
+      "Bash(curl -s \"https://api.github.com/repos/peixl/AI-Movie-Player/actions/runs?per_page=3\")"
     ]
   }
 }
