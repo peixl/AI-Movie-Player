@@ -394,7 +394,7 @@ impl eframe::App for MovieBoxApp {
             match self.layout.active_view {
                 View::Library => {
                     if self.show_detail {
-                        if let Some(ref movie) = self.selected_movie {
+                        if let Some(movie) = self.selected_movie.clone() {
                             ui.horizontal(|ui| {
                                 if ui.button("← 返回 / Back").clicked() {
                                     self.close_detail();
@@ -402,12 +402,11 @@ impl eframe::App for MovieBoxApp {
                                 ui.heading(&movie.title);
                             });
                             ui.add_space(4.0);
-                            let movie_clone = movie.clone();
-                            let detail_action = self.detail_panel.show(ui, &movie_clone, &self.db, self.is_dark);
+                            let detail_action = self.detail_panel.show(ui, &movie, &self.db, self.is_dark);
 
                             match detail_action {
                                 crate::ui::movie_detail::DetailAction::AiAnalyze => {
-                                    self.ai_chat_panel.select_movie(Some(movie_clone));
+                                    self.ai_chat_panel.select_movie(Some(movie.clone()));
                                     self.navigate_to(View::AiChat);
                                 }
                                 crate::ui::movie_detail::DetailAction::SearchSubtitles => {

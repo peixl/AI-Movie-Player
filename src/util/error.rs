@@ -28,8 +28,8 @@ pub enum AppError {
     #[error("Multiple matches / 匹配结果过多 for '{query}': {count} results")]
     AmbiguousMatch { query: String, count: usize },
 
-    #[error("Subtitle download failed / 字幕下载失败 ({source}): {reason}")]
-    SubtitleError { source: String, reason: String },
+    #[error("Subtitle download failed / 字幕下载失败 ({source_name}): {reason}")]
+    SubtitleError { source_name: String, reason: String },
 
     #[error("Parse error / 解析错误: {0}")]
     Parse(String),

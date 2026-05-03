@@ -109,7 +109,7 @@ impl SubtitleFinder {
 
         if !resp.status().is_success() {
             return Err(AppError::SubtitleError {
-                source: "OpenSubtitles".into(),
+                source_name: "OpenSubtitles".into(),
                 reason: format!("HTTP {}", resp.status()),
             });
         }

@@ -67,7 +67,7 @@ impl AiRecommendPanel {
             Color32::from_rgb(100, 100, 115)
         };
         let primary = Color32::from_rgb(99, 102, 241);
-        let bg =
+        let _bg =
             if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) };
 
         // Header
