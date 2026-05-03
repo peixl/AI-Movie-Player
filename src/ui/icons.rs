@@ -40,7 +40,7 @@ fn sketched_line(
         points: [w1, w2, w2, w3],
         closed: false,
         fill: Color32::TRANSPARENT,
-        stroke: Stroke::new(width, color),
+        stroke: Stroke::new(width, color).into(),
     });
     painter.add(shape);
 }
@@ -73,7 +73,7 @@ pub fn icon_film(ui: &mut Ui, size: f32, color: Color32) {
             points: [p1, mid, mid, p2],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke,
+            stroke: stroke.into(),
         }));
     }
 
@@ -365,7 +365,7 @@ pub fn icon_search(ui: &mut Ui, size: f32, color: Color32) {
             points: [p1, mid, mid, p2],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(1.8, color),
+            stroke: Stroke::new(1.8, color).into(),
         }));
     }
 
@@ -498,7 +498,7 @@ pub fn icon_heart(ui: &mut Ui, size: f32, color: Color32, filled: bool) {
             ],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(1.5, color),
+            stroke: Stroke::new(1.5, color).into(),
         };
         painter.add(Shape::CubicBezier(la));
 
@@ -512,7 +512,7 @@ pub fn icon_heart(ui: &mut Ui, size: f32, color: Color32, filled: bool) {
             ],
             closed: false,
             fill: Color32::TRANSPARENT,
-            stroke: Stroke::new(1.5, color),
+            stroke: Stroke::new(1.5, color).into(),
         };
         painter.add(Shape::CubicBezier(ra));
 
