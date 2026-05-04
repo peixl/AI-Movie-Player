@@ -187,6 +187,8 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 - **macOS**: 包含 `.app` bundle 的 `.tar.gz`
 - **Linux**: `.tar.gz` 压缩包
 
+GitHub Packages 会随发布标签同步发布 OCI 包：`ghcr.io/peixl/ai-movie-player`。桌面用户仍建议优先下载 Releases 页面中的原生系统包。
+
 如果 Releases 页面暂时还没有可下载资产，请先按下方命令从源码运行。
 
 ### 环境要求（从源码构建）
@@ -284,6 +286,7 @@ ai-movie-player/
 │   │   ├── ci.yml               # CI: fmt, clippy, test, doc, package smoke
 │   │   ├── dependency-review.yml# PR 依赖风险检查
 │   │   ├── release.yml          # Release: 多平台打包 + 校验和
+│   │   ├── package.yml          # GitHub Packages: GHCR OCI 包
 │   │   ├── labeler.yml          # 按文件路径自动标记 PR
 │   │   └── stale.yml            # 自动关闭过期 issue
 │   ├── ISSUE_TEMPLATE/          # Bug 报告、功能请求模板

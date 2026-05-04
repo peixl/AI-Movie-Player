@@ -170,6 +170,8 @@ The release workflow is configured for Windows, macOS, and Linux packages. Once 
 - **macOS**: `.tar.gz` containing an `.app` bundle
 - **Linux**: `.tar.gz` archive
 
+GitHub Packages is published as an OCI package at `ghcr.io/peixl/ai-movie-player` for release tags. The native Release assets remain the recommended download path for desktop users.
+
 If the Releases page does not yet show downloadable assets, build from source with the commands below.
 
 ### Requirements (from source)
@@ -268,6 +270,7 @@ ai-movie-player/
 │   │   ├── ci.yml               # CI: fmt, clippy, test, doc, package smoke
 │   │   ├── dependency-review.yml# PR dependency risk review
 │   │   ├── release.yml          # Release: multi-OS packaging + checksums
+│   │   ├── package.yml          # GitHub Packages: GHCR OCI package
 │   │   ├── labeler.yml          # Auto-label PRs by file path
 │   │   └── stale.yml            # Auto-close stale issues
 │   ├── ISSUE_TEMPLATE/          # Bug report, feature request templates

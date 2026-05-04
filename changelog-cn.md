@@ -11,6 +11,7 @@
 
 ### 新增
 - 电影详情页新增本地文件打开动作，可调用操作系统默认播放器。
+- 新增 GitHub Packages 发布工作流，发布 GHCR 包 `ghcr.io/peixl/ai-movie-player`。
 - README 新增当前状态说明，澄清播放模式与 beta 阶段成熟度。
 - 新增 AI 观影工作流，包括观影前 briefing、观影后复盘与双片连看建议。
 - 新增 GitHub Issue 模板，覆盖缺陷、功能请求和 AI 工作流想法。
@@ -40,6 +41,9 @@
 - CI 工作流新增并发组、文档构建和依赖排序。
 - Release 工作流为所有产物生成 SHA256 校验和。
 - Cargo.toml 补充完整元数据：homepage、repository、license、keywords、categories、authors。
+
+### 修复
+- 当 egui 默认字体缺少 CJK 覆盖时，中文界面标签会显示为方块字。
 
 ## [0.2.0] - 2026-05-02
 

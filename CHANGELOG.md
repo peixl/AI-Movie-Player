@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Movie detail action to open a stored local file with the operating system's default player.
+- GitHub Packages publishing workflow for the GHCR package `ghcr.io/peixl/ai-movie-player`.
 - README status note that clarifies the current playback model and beta maturity.
 - Guided AI viewing workflows for pre-watch briefing, post-watch recap, and double-feature pairing.
 - GitHub issue templates for bugs, feature requests, and AI workflow ideas.
@@ -40,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflow now includes concurrency groups, documentation build, and dependency ordering.
 - Release workflow now produces SHA256 checksums for all artifacts.
 - Cargo.toml now includes full metadata: homepage, repository, license, keywords, categories, authors.
+
+### Fixed
+- Chinese UI labels could render as square glyphs when egui's default fonts lacked CJK coverage.
 
 ## [0.2.0] - 2026-05-02
 
