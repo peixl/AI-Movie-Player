@@ -14,40 +14,40 @@ categories = ["multimedia", "gui"]
 
 [dependencies]
 # GUI
-eframe = "0.31"
-egui = "0.31"
-egui_extras = { version = "0.31", features = ["all_loaders"] }
+eframe = "0.32"
+egui = "0.32"
+egui_extras = { version = "0.32", features = ["all_loaders"] }
 
 # Async
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.12", features = ["json", "gzip", "brotli", "stream"] }
+reqwest = { version = "0.13", features = ["json", "query", "gzip", "brotli", "stream"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # Database
-rusqlite = { version = "0.34", features = ["bundled", "serde_json"] }
+rusqlite = { version = "0.39", features = ["bundled", "serde_json"] }
 
 # Image processing
 image = { version = "0.25", features = ["jpeg", "png", "webp"] }
 
 # File operations
-rfd = "0.15"
+rfd = "0.17"
 walkdir = "2"
 regex = "1"
 
 # Subtitle
 encoding_rs = "0.8"
-zip = "2"
+zip = "7"
 
 # HTML scraping
-scraper = "0.22"
+scraper = "0.26"
 
 # Config
-toml = "0.8"
+toml = "1.1"
 directories = "6"
 
 # Error handling
@@ -63,7 +63,7 @@ futures-util = "0.3"
 
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
-sha2 = "0.10"
+sha2 = "0.11"
 tempfile = "3"
 url = "2"
 

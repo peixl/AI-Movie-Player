@@ -11,6 +11,19 @@ use crate::db::models::*;
 use crate::db::movies;
 use crate::util::error::Result;
 
+fn bytes_to_lower_hex(bytes: impl AsRef<[u8]>) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let bytes = bytes.as_ref();
+    let mut output = String::with_capacity(bytes.len() * 2);
+
+    for &byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+
+    output
+}
+
 /// Orchestrates metadata enrichment: directory scanning, TMDB lookup, and DB storage.
 pub struct MetadataService;
 
@@ -78,7 +91,7 @@ impl MetadataService {
             hasher.update(&tail_buf);
         }
 
-        Ok(format!("{:x}", hasher.finalize()))
+        Ok(bytes_to_lower_hex(hasher.finalize()))
     }
 
     pub async fn search_and_match(
@@ -186,7 +199,7 @@ mod tests {
     use sha2::{Digest, Sha256};
     use tempfile::TempDir;
 
-    use super::{MetadataService, select_best_match};
+    use super::{MetadataService, bytes_to_lower_hex, select_best_match};
     use crate::db::models::{ParsedFilename, TmdbSearchResult};
 
     fn parsed_filename(title: &str, year: Option<i32>) -> ParsedFilename {
@@ -270,7 +283,7 @@ mod tests {
         std::fs::write(&path, data).expect("write sample file");
 
         let hash = MetadataService::compute_file_hash(&path, 1024).expect("hash small file");
-        let expected = format!("{:x}", Sha256::digest(data));
+        let expected = bytes_to_lower_hex(Sha256::digest(data));
 
         assert_eq!(hash, expected);
     }
@@ -290,7 +303,7 @@ mod tests {
         let mut hasher = Sha256::new();
         hasher.update(b"ABCDEFGH");
         hasher.update(b"12345678");
-        let expected = format!("{:x}", hasher.finalize());
+        let expected = bytes_to_lower_hex(hasher.finalize());
 
         assert_eq!(hash, expected);
     }
