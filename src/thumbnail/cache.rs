@@ -1,6 +1,6 @@
 //! Poster thumbnail download and disk caching.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::api::tmdb::TmdbClient;
 use crate::util::error::Result;
@@ -8,11 +8,11 @@ use crate::util::error::Result;
 const THUMBNAIL_WIDTH: u32 = 300;
 
 /// Get the local path for a cached thumbnail by TMDB ID.
-pub fn get_thumbnail_path(thumbnail_dir: &PathBuf, tmdb_id: i64) -> PathBuf {
+pub fn get_thumbnail_path(thumbnail_dir: &Path, tmdb_id: i64) -> PathBuf {
     thumbnail_dir.join(format!("{}_thumb.jpg", tmdb_id))
 }
 
-pub fn thumbnail_exists(thumbnail_dir: &PathBuf, tmdb_id: i64) -> bool {
+pub fn thumbnail_exists(thumbnail_dir: &Path, tmdb_id: i64) -> bool {
     get_thumbnail_path(thumbnail_dir, tmdb_id).exists()
 }
 
@@ -20,7 +20,7 @@ pub async fn download_and_cache(
     client: &TmdbClient,
     poster_path: &str,
     tmdb_id: i64,
-    thumbnail_dir: &PathBuf,
+    thumbnail_dir: &Path,
 ) -> Result<String> {
     let thumb_path = get_thumbnail_path(thumbnail_dir, tmdb_id);
 

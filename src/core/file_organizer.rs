@@ -14,8 +14,9 @@ pub struct RenameOp {
 
 pub fn render_template(template: &str, movie: &Movie, parsed_title: Option<&str>) -> String {
     let mut result = template.to_string();
+    let title = parsed_title.unwrap_or(&movie.title);
 
-    result = result.replace("{title}", &movie.title);
+    result = result.replace("{title}", title);
     if let Some(ref cn) = movie.title_cn {
         result = result.replace("{title_cn}", cn);
     }
@@ -31,10 +32,6 @@ pub fn render_template(template: &str, movie: &Movie, parsed_title: Option<&str>
     if let Some(ref c) = movie.codec {
         result = result.replace("{codec}", c);
     }
-    if let Some(t) = parsed_title {
-        result = result.replace("{title}", t);
-    }
-
     result
 }
 
@@ -46,17 +43,7 @@ pub fn preview_rename(movie: &Movie, template: &str) -> Option<RenameOp> {
 
     let new_name = render_template(template, movie, None) + &ext;
 
-    // Sanitize filename: remove characters invalid on Windows
-    let new_name = new_name
-        .replace('/', "")
-        .replace('\\', "")
-        .replace(':', " -")
-        .replace('*', "")
-        .replace('?', "")
-        .replace('"', "'")
-        .replace('<', "")
-        .replace('>', "")
-        .replace('|', "");
+    let new_name = sanitize_filename(&new_name);
 
     let parent = old_path.parent()?;
     let new_path = parent.join(&new_name);
@@ -66,6 +53,21 @@ pub fn preview_rename(movie: &Movie, template: &str) -> Option<RenameOp> {
     }
 
     Some(RenameOp { movie_id: movie.id, old_path, new_path })
+}
+
+fn sanitize_filename(name: &str) -> String {
+    let mut sanitized = String::with_capacity(name.len());
+
+    for ch in name.chars() {
+        match ch {
+            '/' | '\\' | '*' | '?' | '<' | '>' | '|' => {}
+            ':' => sanitized.push_str(" -"),
+            '"' => sanitized.push('\''),
+            _ => sanitized.push(ch),
+        }
+    }
+
+    sanitized
 }
 
 pub fn execute_rename(op: &RenameOp) -> std::io::Result<()> {
@@ -172,6 +174,7 @@ mod tests {
         let mut unchanged = sample_movie();
         unchanged.id = 1;
         unchanged.title = "original".to_string();
+        unchanged.local_file_path = Some("C:/movies/original (2024).mkv".to_string());
 
         let mut changed = sample_movie();
         changed.id = 2;

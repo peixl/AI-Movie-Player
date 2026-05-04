@@ -5,17 +5,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod ai;
-mod api;
-mod app;
-mod config;
-mod core;
-mod db;
-mod thumbnail;
-mod ui;
-mod util;
-
-use app::MovieBoxApp;
+use ai_movie_player::app::MovieBoxApp;
 
 fn resolve_app_data_dir() -> std::path::PathBuf {
     let home = std::env::var("USERPROFILE")

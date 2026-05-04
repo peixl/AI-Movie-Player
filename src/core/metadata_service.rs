@@ -3,7 +3,7 @@
 use rusqlite::Connection;
 use sha2::{Digest, Sha256};
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::api::tmdb::TmdbClient;
 use crate::core::filename_parser::{self, is_video_file};
@@ -112,7 +112,7 @@ impl MetadataService {
         file_path: &std::path::Path,
         details: &TmdbMovieDetails,
         db: &Connection,
-        thumbnail_dir: &PathBuf,
+        thumbnail_dir: &Path,
     ) -> Result<Movie> {
         let filename =
             file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();

@@ -143,3 +143,9 @@ impl SubtitlePanel {
         self.message = None;
     }
 }
+
+impl Default for SubtitlePanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -128,15 +128,18 @@ pub fn parse_filename(filename: &str) -> ParsedFilename {
 }
 
 fn strip_extension(filename: &str) -> String {
+    if filename.starts_with('.') && !filename[1..].contains('.') {
+        return String::new();
+    }
+
     let path = std::path::Path::new(filename);
     path.with_extension("").to_string_lossy().to_string()
 }
 
 fn clean_title(s: &str) -> String {
     s.trim()
-        .trim_end_matches(|c: char| c == '-' || c == '_' || c == '.')
-        .replace('.', " ")
-        .replace('_', " ")
+        .trim_end_matches(['-', '_', '.'])
+        .replace(['.', '_'], " ")
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")

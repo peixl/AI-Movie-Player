@@ -1,14 +1,14 @@
 //! Database connection setup with WAL mode and automatic migrations.
 
 use rusqlite::Connection;
-use std::path::PathBuf;
+use std::path::Path;
 
 use super::migrations;
 
 /// Open (or create) the SQLite database with WAL mode and foreign keys enabled.
 ///
 /// Handles legacy database path migration from `ai-movie-box.db` to `ai-movie-player.db`.
-pub fn open_database(app_data_dir: &PathBuf) -> rusqlite::Result<Connection> {
+pub fn open_database(app_data_dir: &Path) -> rusqlite::Result<Connection> {
     std::fs::create_dir_all(app_data_dir).ok();
     let preferred_path = app_data_dir.join("ai-movie-player.db");
     let legacy_path = app_data_dir.join("ai-movie-box.db");

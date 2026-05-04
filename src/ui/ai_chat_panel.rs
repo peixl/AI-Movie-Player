@@ -52,6 +52,14 @@ struct WorkflowNotice {
     is_error: bool,
 }
 
+#[derive(Clone, Copy)]
+struct ChatPalette {
+    text: Color32,
+    dim: Color32,
+    primary: Color32,
+    bg: Color32,
+}
+
 #[derive(Clone)]
 enum WorkflowStatus {
     Idle,
@@ -187,7 +195,7 @@ impl WorkflowCard {
         for section in &self.sections {
             output.push_str("\n\n");
             output.push_str(&section.title);
-            output.push_str("\n");
+            output.push('\n');
             output.push_str(&section.body);
         }
         output
@@ -307,6 +315,7 @@ impl AiChatPanel {
         let primary = Color32::from_rgb(99, 102, 241);
         let bg =
             if is_dark { Color32::from_rgb(17, 17, 25) } else { Color32::from_rgb(250, 250, 253) };
+        let palette = ChatPalette { text, dim, primary, bg };
 
         // Header
         ui.horizontal(|ui| {
@@ -443,7 +452,7 @@ impl AiChatPanel {
         }
 
         ui.add_space(8.0);
-        self.show_workflow_panel(ui, db, client, runtime, is_dark, text, dim, primary, bg);
+        self.show_workflow_panel(ui, db, client, runtime, is_dark, palette);
 
         ui.add_space(8.0);
 
@@ -819,11 +828,9 @@ impl AiChatPanel {
         client: &Option<Arc<AiClient>>,
         runtime: &tokio::runtime::Runtime,
         is_dark: bool,
-        text: Color32,
-        dim: Color32,
-        primary: Color32,
-        bg: Color32,
+        palette: ChatPalette,
     ) {
+        let ChatPalette { text, dim, primary, bg } = palette;
         let workflow_status = self.workflow_status.lock().unwrap().clone();
 
         Frame::NONE
@@ -1136,6 +1143,12 @@ impl AiChatPanel {
                 });
             }
         }
+    }
+}
+
+impl Default for AiChatPanel {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

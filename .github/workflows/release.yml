@@ -53,12 +53,12 @@ jobs:
       - name: Package macOS build
         if: runner.os == 'macOS'
         shell: bash
-        run: ./scripts/package-macos.sh "${GITHUB_REF_NAME:-dev}"
+        run: bash ./scripts/package-macos.sh "${GITHUB_REF_NAME:-dev}"
 
       - name: Package Linux build
         if: runner.os == 'Linux'
         shell: bash
-        run: ./scripts/package-linux.sh "${GITHUB_REF_NAME:-dev}"
+        run: bash ./scripts/package-linux.sh "${GITHUB_REF_NAME:-dev}"
 
       - name: Upload packaged artifacts
         uses: actions/upload-artifact@v4

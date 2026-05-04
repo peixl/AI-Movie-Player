@@ -228,3 +228,9 @@ impl AddMovieWizard {
         self.log_messages.push(msg);
     }
 }
+
+impl Default for AddMovieWizard {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -33,8 +33,6 @@ impl SubtitleFinder {
 
         #[derive(Debug, Deserialize)]
         struct OsSubtitle {
-            #[serde(rename = "IDSubtitleFile")]
-            id: Option<String>,
             #[serde(rename = "SubFileName")]
             file_name: Option<String>,
             #[serde(rename = "SubDownloadsCnt")]
@@ -51,8 +49,6 @@ impl SubtitleFinder {
             iso639: Option<String>,
             #[serde(rename = "SubHearingImpaired")]
             hearing_imp: Option<String>,
-            #[serde(rename = "MatchedBy")]
-            matched_by: Option<String>,
         }
 
         let client = Client::new();

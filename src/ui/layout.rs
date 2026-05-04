@@ -20,6 +20,21 @@ pub struct AppLayout {
     pub active_view: View,
 }
 
+#[derive(Clone, Copy)]
+struct NavColors {
+    text: Color32,
+    dim: Color32,
+    primary: Color32,
+}
+
+struct NavItem<'a> {
+    view: View,
+    icon: &'a str,
+    label: &'a str,
+    badge: &'a str,
+    styled_badge: bool,
+}
+
 impl AppLayout {
     pub fn new() -> Self {
         Self { active_view: View::Library }
@@ -29,30 +44,26 @@ impl AppLayout {
         &mut self,
         ui: &mut Ui,
         ctx: &Context,
-        view: View,
-        icon: &str,
-        label: &str,
-        badge: &str,
         is_dark: bool,
-        text: Color32,
-        dim: Color32,
-        primary: Color32,
-        styled_badge: bool,
+        item: NavItem<'_>,
+        colors: NavColors,
     ) -> bool {
-        let is_active = self.active_view == view;
-        let label_color = if is_active { Color32::WHITE } else { text };
+        let is_active = self.active_view == item.view;
+        let label_color = if is_active { Color32::WHITE } else { colors.text };
 
         let btn_size = egui::vec2(ui.available_width() - 8.0, 36.0);
         let (rect, response) = ui.allocate_exact_size(btn_size, Sense::click());
 
         if ui.is_rect_visible(rect) {
-            let hover_t =
-                ctx.animate_bool(egui::Id::new(format!("nav_hover_{}", label)), response.hovered());
+            let hover_t = ctx.animate_bool(
+                egui::Id::new(format!("nav_hover_{}", item.label)),
+                response.hovered(),
+            );
 
             if is_active {
-                ui.painter().rect_filled(rect, Rounding::same(6.0), primary);
+                ui.painter().rect_filled(rect, Rounding::same(6.0), colors.primary);
             } else if hover_t > 0.01 {
-                let hover_alpha = (hover_t * 10.0).min(1.0);
+                let hover_alpha = (hover_t * 10.0).clamp(0.0, 1.0);
                 let hover_bg = if is_dark {
                     Color32::from_rgba_premultiplied(255, 255, 255, (hover_alpha * 8.0) as u8)
                 } else {
@@ -62,22 +73,22 @@ impl AppLayout {
             }
 
             let icon_center = pos2(rect.min.x + 20.0, rect.center().y);
-            let icon_color = if is_active { Color32::WHITE } else { primary };
-            draw_icon_at(ui.painter(), icon, 20.0, icon_center, icon_color);
+            let icon_color = if is_active { Color32::WHITE } else { colors.primary };
+            draw_icon_at(ui.painter(), item.icon, 20.0, icon_center, icon_color);
 
             let label_galley = ui.painter().layout_no_wrap(
-                label.to_string(),
+                item.label.to_string(),
                 egui::FontId::proportional(14.0),
                 label_color,
             );
             let label_pos = pos2(rect.min.x + 42.0, rect.center().y - label_galley.size().y / 2.0);
             ui.painter().galley(label_pos, label_galley, label_color);
 
-            if !badge.is_empty() && !is_active {
-                if styled_badge {
-                    let badge_color = primary.linear_multiply(0.8);
+            if !item.badge.is_empty() && !is_active {
+                if item.styled_badge {
+                    let badge_color = colors.primary.linear_multiply(0.8);
                     let badge_galley = ui.painter().layout_no_wrap(
-                        badge.to_string(),
+                        item.badge.to_string(),
                         egui::FontId::proportional(10.0),
                         badge_color,
                     );
@@ -104,15 +115,15 @@ impl AppLayout {
                     );
                 } else {
                     let badge_galley = ui.painter().layout_no_wrap(
-                        badge.to_string(),
+                        item.badge.to_string(),
                         egui::FontId::proportional(11.0),
-                        dim,
+                        colors.dim,
                     );
                     let badge_pos = pos2(
                         rect.max.x - badge_galley.size().x - 12.0,
                         rect.center().y - badge_galley.size().y / 2.0,
                     );
-                    ui.painter().galley(badge_pos, badge_galley, dim);
+                    ui.painter().galley(badge_pos, badge_galley, colors.dim);
                 }
             }
         }
@@ -137,6 +148,7 @@ impl AppLayout {
             Color32::from_rgb(100, 100, 115)
         };
         let primary = Color32::from_rgb(99, 102, 241);
+        let colors = NavColors { text, dim, primary };
 
         // App branding with hand-drawn film icon
         ui.add_space(12.0);
@@ -171,7 +183,11 @@ impl AppLayout {
 
         for (view, icon, label, badge) in &nav_items {
             if self.render_nav_item(
-                ui, ctx, *view, icon, label, badge, is_dark, text, dim, primary, false,
+                ui,
+                ctx,
+                is_dark,
+                NavItem { view: *view, icon, label, badge: badge.as_str(), styled_badge: false },
+                colors,
             ) {
                 selected_view = Some(*view);
             }
@@ -180,7 +196,11 @@ impl AppLayout {
         // Render AI nav items
         for (view, icon, label, badge) in &ai_nav_items {
             if self.render_nav_item(
-                ui, ctx, *view, icon, label, badge, is_dark, text, dim, primary, true,
+                ui,
+                ctx,
+                is_dark,
+                NavItem { view: *view, icon, label, badge, styled_badge: true },
+                colors,
             ) {
                 selected_view = Some(*view);
             }
@@ -195,6 +215,12 @@ impl AppLayout {
         ui.label(RichText::new(format!("Total / 总计: {}", movie_count)).size(12.0).color(dim));
 
         selected_view
+    }
+}
+
+impl Default for AppLayout {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

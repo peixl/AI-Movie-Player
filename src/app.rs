@@ -34,9 +34,7 @@ struct Toast {
 
 #[derive(Clone, Copy)]
 enum ToastKind {
-    Success,
     Info,
-    Error,
 }
 
 /// Central application state, implements `eframe::App` for the main event loop.
@@ -49,7 +47,6 @@ pub struct MovieBoxApp {
     settings: AppSettings,
     tmdb_client: Arc<Mutex<TmdbClient>>,
     ai_client: Option<Arc<AiClient>>,
-    app_data_dir: PathBuf,
     thumbnail_dir: PathBuf,
     is_dark: bool,
     runtime: tokio::runtime::Runtime,
@@ -148,7 +145,6 @@ impl MovieBoxApp {
             settings,
             tmdb_client,
             ai_client,
-            app_data_dir,
             runtime,
             toasts: Vec::new(),
             last_view: View::Library,
@@ -259,8 +255,6 @@ impl MovieBoxApp {
             };
 
             let (bg, icon) = match toast.kind {
-                ToastKind::Success => (crate::ui::theme::success_color(self.is_dark), "✓"),
-                ToastKind::Error => (crate::ui::theme::error_color(self.is_dark), "✗"),
                 ToastKind::Info => (crate::ui::theme::surface_light_color(self.is_dark), "ℹ"),
             };
 

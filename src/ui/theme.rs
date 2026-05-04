@@ -51,7 +51,7 @@ pub fn apply_theme(ctx: &egui::Context, is_dark: bool) {
     let mut visuals = if is_dark { Visuals::dark() } else { Visuals::light() };
     visuals.window_corner_radius = Rounding::same(8.0);
     visuals.window_shadow = epaint::Shadow {
-        offset: [0, 2].into(),
+        offset: [0, 2],
         blur: 12,
         spread: 0,
         color: Color32::from_black_alpha(if is_dark { 80 } else { 30 }),

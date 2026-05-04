@@ -356,3 +356,9 @@ impl AiRecommendPanel {
             });
     }
 }
+
+impl Default for AiRecommendPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}

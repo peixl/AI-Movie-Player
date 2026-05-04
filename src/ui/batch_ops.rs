@@ -111,3 +111,9 @@ impl BatchOpsPanel {
         }
     }
 }
+
+impl Default for BatchOpsPanel {
+    fn default() -> Self {
+        Self::new()
+    }
+}

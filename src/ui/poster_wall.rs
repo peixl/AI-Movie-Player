@@ -57,6 +57,14 @@ pub struct PosterWall {
     filter_dirty: bool,
 }
 
+#[derive(Clone, Copy)]
+struct PosterColors {
+    text: Color32,
+    dim: Color32,
+    background: Color32,
+    skeleton: Color32,
+}
+
 impl PosterWall {
     pub fn new() -> Self {
         Self {
@@ -108,16 +116,27 @@ impl PosterWall {
 
         // Poster grid
         let available = ui.available_size();
-        let columns = ((available.x / (POSTER_WIDTH + GAP)) as usize).max(2).min(8);
+        let columns = ((available.x / (POSTER_WIDTH + GAP)) as usize).clamp(2, 8);
         let actual_poster_width = (available.x - GAP * (columns as f32 - 1.0)) / columns as f32;
-        let actual_poster_height = actual_poster_width * 1.5;
+        let actual_poster_height = actual_poster_width * (POSTER_HEIGHT / POSTER_WIDTH);
 
-        let text_color =
-            if is_dark { Color32::from_rgb(240, 240, 245) } else { Color32::from_rgb(15, 15, 25) };
-        let dim_color = if is_dark {
-            Color32::from_rgb(150, 150, 165)
-        } else {
-            Color32::from_rgb(100, 100, 115)
+        let colors = PosterColors {
+            text: if is_dark {
+                Color32::from_rgb(240, 240, 245)
+            } else {
+                Color32::from_rgb(15, 15, 25)
+            },
+            dim: if is_dark {
+                Color32::from_rgb(150, 150, 165)
+            } else {
+                Color32::from_rgb(100, 100, 115)
+            },
+            background: if is_dark {
+                Color32::from_rgb(40, 40, 55)
+            } else {
+                Color32::from_rgb(230, 230, 240)
+            },
+            skeleton: crate::ui::animation::skeleton_poster_color(ctx, is_dark),
         };
 
         egui::ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
@@ -147,9 +166,7 @@ impl PosterWall {
                         &movie,
                         actual_poster_width,
                         actual_poster_height,
-                        text_color,
-                        dim_color,
-                        is_dark,
+                        colors,
                     );
                 }
 
@@ -165,16 +182,16 @@ impl PosterWall {
             if self.movies.is_empty() {
                 ui.add_space(40.0);
                 ui.vertical_centered(|ui| {
-                    crate::ui::icons::icon_empty_library(ui, 80.0, dim_color);
+                    crate::ui::icons::icon_empty_library(ui, 80.0, colors.dim);
                     ui.add_space(16.0);
                     ui.label(
-                        RichText::new("库中暂无影片 / No movies yet").size(18.0).color(dim_color),
+                        RichText::new("库中暂无影片 / No movies yet").size(18.0).color(colors.dim),
                     );
                     ui.add_space(8.0);
                     ui.label(
                         RichText::new("点击“导入影片”开始 / Click Import Movies to start")
                             .size(14.0)
-                            .color(dim_color),
+                            .color(colors.dim),
                     );
                 });
             }
@@ -188,9 +205,7 @@ impl PosterWall {
         movie: &MovieSummary,
         width: f32,
         height: f32,
-        text_color: Color32,
-        dim_color: Color32,
-        is_dark: bool,
+        colors: PosterColors,
     ) {
         let (rect, response) =
             ui.allocate_exact_size(Vec2::new(width, height + 40.0), Sense::click());
@@ -220,10 +235,6 @@ impl PosterWall {
             ui.painter().rect_filled(shadow_rect, Rounding::same(10.0), shadow_color);
         }
 
-        // Draw poster background with shimmer while loading
-        let bg_color =
-            if is_dark { Color32::from_rgb(40, 40, 55) } else { Color32::from_rgb(230, 230, 240) };
-
         if let Some(ref local_path) = movie.poster_local {
             if let Some(texture) = self.texture_cache.get(&movie.id) {
                 // Cached texture — mark as recently used
@@ -241,8 +252,7 @@ impl PosterWall {
                 ui.painter().add(mesh);
             } else {
                 // Show shimmer while loading texture from disk
-                let shimmer_color = crate::ui::animation::skeleton_poster_color(ctx, is_dark);
-                ui.painter().rect_filled(poster_img_rect, rounding, shimmer_color);
+                ui.painter().rect_filled(poster_img_rect, rounding, colors.skeleton);
 
                 // Load texture
                 if let Ok(img) = image::open(local_path) {
@@ -267,19 +277,19 @@ impl PosterWall {
                     );
                     ui.painter().add(mesh);
                 } else {
-                    ui.painter().rect_filled(poster_img_rect, rounding, bg_color);
+                    ui.painter().rect_filled(poster_img_rect, rounding, colors.background);
                 }
             }
         } else {
-            ui.painter().rect_filled(poster_img_rect, rounding, bg_color);
+            ui.painter().rect_filled(poster_img_rect, rounding, colors.background);
             // Draw text placeholder
             let galley = ui.painter().layout_no_wrap(
                 "无海报 / No poster".into(),
                 egui::FontId::proportional(13.0),
-                dim_color,
+                colors.dim,
             );
             let pos = poster_img_rect.center() - galley.size() / 2.0;
-            ui.painter().galley(pos, galley, dim_color);
+            ui.painter().galley(pos, galley, colors.dim);
         }
 
         // Selection border
@@ -297,8 +307,8 @@ impl PosterWall {
         let title =
             if let Some(ref cn) = movie.title_cn { cn.clone() } else { movie.title.clone() };
         let title_galley =
-            ui.painter().layout(title, egui::FontId::proportional(12.0), text_color, width);
-        ui.painter().galley(egui::pos2(rect.min.x, title_y), title_galley, text_color);
+            ui.painter().layout(title, egui::FontId::proportional(12.0), colors.text, width);
+        ui.painter().galley(egui::pos2(rect.min.x, title_y), title_galley, colors.text);
 
         // Year + Rating on second line
         let info_y = title_y + 16.0;
@@ -313,8 +323,8 @@ impl PosterWall {
             info.push_str(&format!("  {}", res));
         }
         let info_galley =
-            ui.painter().layout_no_wrap(info, egui::FontId::proportional(11.0), dim_color);
-        ui.painter().galley(egui::pos2(rect.min.x, info_y), info_galley, dim_color);
+            ui.painter().layout_no_wrap(info, egui::FontId::proportional(11.0), colors.dim);
+        ui.painter().galley(egui::pos2(rect.min.x, info_y), info_galley, colors.dim);
 
         // Handle click
         if response.clicked() {
@@ -379,5 +389,11 @@ impl PosterWall {
                 ui.label(format!("{} 部影片 / {} movies", count, count));
             });
         });
+    }
+}
+
+impl Default for PosterWall {
+    fn default() -> Self {
+        Self::new()
     }
 }

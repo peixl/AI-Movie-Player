@@ -59,7 +59,6 @@ struct TmdbMovieRaw {
 
 #[derive(Debug, Deserialize)]
 struct TmdbGenre {
-    id: i32,
     name: String,
 }
 
@@ -74,7 +73,6 @@ struct TmdbCast {
     name: String,
     character: String,
     profile_path: Option<String>,
-    known_for_department: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,7 +84,6 @@ struct TmdbCrew {
 #[derive(Debug, Deserialize)]
 struct TmdbCountry {
     iso_3166_1: String,
-    name: String,
 }
 
 impl TmdbClient {

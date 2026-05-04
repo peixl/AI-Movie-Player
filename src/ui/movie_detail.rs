@@ -66,7 +66,7 @@ impl MovieDetailPanel {
                 // Poster (cached — only decodes from disk once per movie)
                 if let Some(ref poster_path) = movie.poster_local {
                     let needs_load =
-                        self.cached_poster.as_ref().map_or(true, |(id, _)| *id != movie.id);
+                        self.cached_poster.as_ref().is_none_or(|(id, _)| *id != movie.id);
                     if needs_load {
                         if let Ok(img) = image::open(poster_path) {
                             let size = [img.width() as _, img.height() as _];
@@ -267,5 +267,11 @@ impl MovieDetailPanel {
         });
 
         action
+    }
+}
+
+impl Default for MovieDetailPanel {
+    fn default() -> Self {
+        Self::new()
     }
 }

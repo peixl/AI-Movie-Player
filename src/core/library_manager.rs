@@ -1,7 +1,7 @@
 //! Library scanning, import, and duplicate detection.
 
 use rusqlite::Connection;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::api::tmdb::TmdbClient;
 use crate::core::{filename_parser, metadata_service::MetadataService};
@@ -46,7 +46,7 @@ impl LibraryManager {
         client: &TmdbClient,
         db: &Connection,
         files: &[PathBuf],
-        thumbnail_dir: &PathBuf,
+        thumbnail_dir: &Path,
         auto_confirm: bool,
         progress_callback: impl Fn(ScanProgress),
     ) -> Result<Vec<Movie>> {
@@ -143,8 +143,7 @@ mod tests {
 
     fn setup_db() -> (rusqlite::Connection, TempDir) {
         let dir = TempDir::new().expect("Failed to create temp dir");
-        let conn =
-            connection::open_database(&dir.path().to_path_buf()).expect("Failed to open test DB");
+        let conn = connection::open_database(dir.path()).expect("Failed to open test DB");
         (conn, dir)
     }
 

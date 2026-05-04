@@ -1,5 +1,6 @@
 # Build
 /target
+/dist
 
 # IDE
 .idea/
@@ -24,3 +25,4 @@
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+.omx/
