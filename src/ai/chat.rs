@@ -1,5 +1,9 @@
 //! AI Movie Player chat intelligence.
 
+use crate::ai::context::{
+    display_cast, display_file_size, display_genres, local_file_name, movie_technical_traits,
+    push_prompt_line,
+};
 use crate::api::ai::{AiClient, ChatMessage};
 use crate::db::models::Movie;
 use crate::util::error::Result;
@@ -10,6 +14,7 @@ fn response_style_guide() -> &'static str {
 - Sound calm, elegant, cinematic, and genuinely helpful.\n\
 - Use specific evidence from the movie or library instead of generic praise.\n\
 - Never invent facts. If something is uncertain, say so briefly and continue with what is reliable.\n\
+- Treat local file details as private context: never reveal full local paths or credentials.\n\
 - Mention ifq.ai only when it naturally helps explain the product context, not as advertising."
 }
 
@@ -29,27 +34,53 @@ pub fn build_movie_context(movie: &Movie) -> String {
     let mut ctx = build_general_context();
     ctx.push_str("Current film / 当前影片\n\n");
 
-    ctx.push_str(&format!("- **Title / 片名:** {}\n", movie.title));
-    if let Some(ref cn) = movie.title_cn {
-        ctx.push_str(&format!("- **Chinese Title / 中文名:** {}\n", cn));
+    push_prompt_line(&mut ctx, "Title / 片名", &movie.title);
+    if let Some(chinese_title) = &movie.title_cn {
+        push_prompt_line(&mut ctx, "Chinese Title / 中文名", chinese_title);
     }
-    if let Some(y) = movie.year {
-        ctx.push_str(&format!("- **Year / 年份:** {}\n", y));
+    if let Some(original_title) = &movie.original_title {
+        push_prompt_line(&mut ctx, "Original Title / 原名", original_title);
     }
-    if let Some(r) = movie.rating {
-        ctx.push_str(&format!("- **TMDB Rating / 评分:** {:.1}/10\n", r));
+    if let Some(year) = movie.year {
+        push_prompt_line(&mut ctx, "Year / 年份", year.to_string());
     }
-    if let Some(ref genres) = movie.genres {
-        ctx.push_str(&format!("- **Genres / 类型:** {}\n", genres));
+    if let Some(rating) = movie.rating {
+        push_prompt_line(&mut ctx, "TMDB Rating / 评分", format!("{:.1}/10", rating));
     }
-    if let Some(ref dir) = movie.director {
-        ctx.push_str(&format!("- **Director / 导演:** {}\n", dir));
+    if let Some(genres) = &movie.genres {
+        push_prompt_line(&mut ctx, "Genres / 类型", display_genres(genres));
     }
-    if let Some(ref overview) = movie.overview {
-        ctx.push_str(&format!("- **Synopsis / 剧情简介:** {}\n", overview));
+    if let Some(runtime) = movie.runtime {
+        push_prompt_line(&mut ctx, "Runtime / 片长", format!("{} min", runtime));
     }
-    if let Some(ref cast) = movie.cast_list {
-        ctx.push_str(&format!("- **Cast / 演员:** {}\n", cast));
+    if let Some(director) = &movie.director {
+        push_prompt_line(&mut ctx, "Director / 导演", director);
+    }
+    if let Some(country) = &movie.country {
+        push_prompt_line(&mut ctx, "Country / 国家地区", country);
+    }
+    if let Some(tagline) = &movie.tagline {
+        push_prompt_line(&mut ctx, "Tagline / 宣传语", tagline);
+    }
+    if let Some(overview_cn) = &movie.overview_cn {
+        push_prompt_line(&mut ctx, "Chinese Synopsis / 中文剧情简介", overview_cn);
+    }
+    if let Some(overview) = &movie.overview {
+        push_prompt_line(&mut ctx, "Synopsis / 剧情简介", overview);
+    }
+    if let Some(cast) = &movie.cast_list {
+        push_prompt_line(&mut ctx, "Cast / 演员", display_cast(cast, 10));
+    }
+
+    let technical_traits = movie_technical_traits(movie);
+    if !technical_traits.is_empty() {
+        push_prompt_line(&mut ctx, "Media Traits / 媒体特征", technical_traits.join(", "));
+    }
+    if let Some(file_size) = movie.file_size.and_then(display_file_size) {
+        push_prompt_line(&mut ctx, "File Size / 文件大小", file_size);
+    }
+    if let Some(file_name) = movie.local_file_path.as_deref().and_then(local_file_name) {
+        push_prompt_line(&mut ctx, "Local File Name / 本地文件名", file_name);
     }
 
     ctx
@@ -218,7 +249,10 @@ mod tests {
             overview_cn: None,
             tagline: None,
             director: Some("Wong Kar-wai".to_string()),
-            cast_list: Some("[\"Tony Leung\",\"Maggie Cheung\"]".to_string()),
+            cast_list: Some(
+                r#"[{"name":"Tony Leung","character":"Chow Mo-wan","profile_path":null},{"name":"Maggie Cheung","character":"Su Li-zhen","profile_path":null}]"#
+                    .to_string(),
+            ),
             language: None,
             country: None,
             local_file_path: None,
@@ -252,9 +286,28 @@ mod tests {
         assert!(context.contains("- **Chinese Title / 中文名:** 花样年华"));
         assert!(context.contains("- **Year / 年份:** 2000"));
         assert!(context.contains("- **Director / 导演:** Wong Kar-wai"));
+        assert!(context.contains("Romance, Drama"));
+        assert!(context.contains("Tony Leung as Chow Mo-wan"));
         assert!(context.contains(
             "- **Synopsis / 剧情简介:** Two neighbors discover their spouses are having an affair."
         ));
+    }
+
+    #[test]
+    fn build_movie_context_uses_basename_without_full_local_path() {
+        let mut movie = sample_movie();
+        movie.local_file_path =
+            Some("/Users/example/Secret Library/In.the.Mood.for.Love.2000.1080p.mkv".into());
+        movie.file_size = Some(1_610_612_736);
+        movie.resolution = Some("1080p".into());
+
+        let context = build_movie_context(&movie);
+
+        assert!(context.contains("In.the.Mood.for.Love.2000.1080p.mkv"));
+        assert!(context.contains("1.5 GB"));
+        assert!(context.contains("resolution 1080p"));
+        assert!(!context.contains("/Users/example"));
+        assert!(!context.contains("Secret Library"));
     }
 
     #[test]

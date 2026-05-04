@@ -100,11 +100,7 @@ impl MovieBoxApp {
         )));
 
         let ai_client = if !settings.ai_api_key.is_empty() {
-            log::info!(
-                "AI configured: endpoint={}, model={}",
-                settings.ai_endpoint,
-                settings.ai_model
-            );
+            log::info!("AI configured: endpoint and model are set");
             Some(Arc::new(AiClient::new(AiConfig {
                 endpoint: settings.ai_endpoint.clone(),
                 api_key: settings.ai_api_key.clone(),

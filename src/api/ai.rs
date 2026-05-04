@@ -1,14 +1,27 @@
 //! OpenAI-compatible AI client.
 //! Supports OpenAI, Azure OpenAI, Ollama, LM Studio, and any OpenAI-compatible API.
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
 use tokio::sync::Semaphore;
 
 use crate::util::error::{AppError, Result};
 
 const DEFAULT_ENDPOINT: &str = "https://api.openai.com/v1";
 const DEFAULT_MODEL: &str = "gpt-4o-mini";
+const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
+const MAX_ERROR_BODY_CHARS: usize = 800;
+
+static RE_BEARER_TOKEN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]{8,}").expect("valid bearer token regex")
+});
+
+static RE_COMMON_API_KEY: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b(?:sk|tp)-[A-Za-z0-9_-]{8,}\b").expect("valid API key regex"));
 
 /// AI provider configuration
 #[derive(Debug, Clone)]
@@ -34,7 +47,9 @@ impl Default for AiConfig {
 
 impl AiConfig {
     pub fn is_configured(&self) -> bool {
-        !self.api_key.is_empty()
+        !self.endpoint.trim().is_empty()
+            && !self.api_key.trim().is_empty()
+            && !self.model.trim().is_empty()
     }
 }
 
@@ -159,6 +174,52 @@ fn collect_stream_tokens(buffer: &mut String, flush_partial: bool) -> (Vec<Strin
     (tokens, saw_done)
 }
 
+fn truncate_for_display(value: &str, max_chars: usize) -> String {
+    let mut chars = value.trim().chars();
+    let truncated: String = chars.by_ref().take(max_chars).collect();
+
+    if chars.next().is_some() { format!("{}...", truncated.trim_end()) } else { truncated }
+}
+
+fn sanitize_provider_error_body(body: &str) -> String {
+    let redacted = RE_COMMON_API_KEY.replace_all(body, "[REDACTED_API_KEY]");
+    let redacted = RE_BEARER_TOKEN.replace_all(&redacted, "Bearer [REDACTED]");
+    let body = truncate_for_display(&redacted, MAX_ERROR_BODY_CHARS);
+
+    if body.is_empty() { "empty error body / 空错误内容".into() } else { body }
+}
+
+fn ai_api_error(status: u16, body: &str) -> AppError {
+    AppError::Config(format!(
+        "AI API error / AI 接口错误 ({}): {}",
+        status,
+        sanitize_provider_error_body(body)
+    ))
+}
+
+fn extract_chat_content(data: ChatResponse) -> Result<String> {
+    let content = data
+        .choices
+        .first()
+        .and_then(|choice| choice.message.content.as_deref())
+        .unwrap_or_default()
+        .to_string();
+
+    if content.trim().is_empty() {
+        return Err(AppError::Parse(
+            "AI response did not contain text content / AI 响应没有文本内容".into(),
+        ));
+    }
+
+    Ok(content)
+}
+
+fn parse_non_stream_chat_response(raw_response: &str) -> Option<String> {
+    serde_json::from_str::<ChatResponse>(raw_response.trim())
+        .ok()
+        .and_then(|data| extract_chat_content(data).ok())
+}
+
 /// AI client with OpenAI-compatible API
 pub struct AiClient {
     config: AiConfig,
@@ -168,7 +229,16 @@ pub struct AiClient {
 
 impl AiClient {
     pub fn new(config: AiConfig) -> Self {
-        Self { config, client: reqwest::Client::new(), rate_limiter: Arc::new(Semaphore::new(10)) }
+        let client = reqwest::Client::builder()
+            .timeout(DEFAULT_REQUEST_TIMEOUT)
+            .user_agent(format!("ai-movie-player/{}", env!("CARGO_PKG_VERSION")))
+            .build()
+            .unwrap_or_else(|err| {
+                log::warn!("Failed to build configured AI HTTP client: {}", err);
+                reqwest::Client::new()
+            });
+
+        Self { config, client, rate_limiter: Arc::new(Semaphore::new(10)) }
     }
 
     pub fn config(&self) -> &AiConfig {
@@ -179,16 +249,32 @@ impl AiClient {
         self.config.is_configured()
     }
 
-    /// Send a chat completion request and get the full response.
-    pub async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
-        if !self.is_ready() {
+    fn validate_ready(&self) -> Result<()> {
+        if self.config.endpoint.trim().is_empty() {
+            return Err(AppError::Config("AI endpoint not configured / 未配置 AI 接口地址".into()));
+        }
+        if self.config.api_key.trim().is_empty() {
             return Err(AppError::Config("AI API key not configured / 未配置 AI API Key".into()));
         }
+        if self.config.model.trim().is_empty() {
+            return Err(AppError::Config("AI model not configured / 未配置 AI 模型".into()));
+        }
+
+        Ok(())
+    }
+
+    fn chat_completions_url(&self) -> String {
+        format!("{}/chat/completions", self.config.endpoint.trim().trim_end_matches('/'))
+    }
+
+    /// Send a chat completion request and get the full response.
+    pub async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
+        self.validate_ready()?;
 
         let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
         let req = ChatRequest {
-            model: self.config.model.clone(),
+            model: self.config.model.trim().to_string(),
             messages: messages.to_vec(),
             temperature: self.config.temperature,
             max_tokens: self.config.max_tokens,
@@ -197,9 +283,10 @@ impl AiClient {
 
         let resp = self
             .client
-            .post(format!("{}/chat/completions", self.config.endpoint.trim_end_matches('/')))
-            .header("Authorization", format!("Bearer {}", self.config.api_key))
+            .post(self.chat_completions_url())
+            .header("Authorization", format!("Bearer {}", self.config.api_key.trim()))
             .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
             .json(&req)
             .send()
             .await?;
@@ -207,22 +294,11 @@ impl AiClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::Config(format!(
-                "AI API error / AI 接口错误 ({}): {}",
-                status,
-                if body.len() > 200 { &body[..200] } else { &body }
-            )));
+            return Err(ai_api_error(status, &body));
         }
 
         let data: ChatResponse = resp.json().await?;
-        let content = data
-            .choices
-            .first()
-            .and_then(|c| c.message.content.as_deref())
-            .unwrap_or_default()
-            .to_string();
-
-        Ok(content)
+        extract_chat_content(data)
     }
 
     /// Stream a chat completion, yielding tokens as they arrive.
@@ -231,14 +307,12 @@ impl AiClient {
         messages: &[ChatMessage],
         mut on_token: impl FnMut(&str),
     ) -> Result<String> {
-        if !self.is_ready() {
-            return Err(AppError::Config("AI API key not configured / 未配置 AI API Key".into()));
-        }
+        self.validate_ready()?;
 
         let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
         let req = ChatRequest {
-            model: self.config.model.clone(),
+            model: self.config.model.trim().to_string(),
             messages: messages.to_vec(),
             temperature: self.config.temperature,
             max_tokens: self.config.max_tokens,
@@ -247,9 +321,10 @@ impl AiClient {
 
         let resp = self
             .client
-            .post(format!("{}/chat/completions", self.config.endpoint.trim_end_matches('/')))
-            .header("Authorization", format!("Bearer {}", self.config.api_key))
+            .post(self.chat_completions_url())
+            .header("Authorization", format!("Bearer {}", self.config.api_key.trim()))
             .header("Content-Type", "application/json")
+            .header("Accept", "text/event-stream, application/json")
             .json(&req)
             .send()
             .await?;
@@ -257,13 +332,11 @@ impl AiClient {
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::Config(format!(
-                "AI API error / AI 接口错误 ({})：{}",
-                status, body
-            )));
+            return Err(ai_api_error(status, &body));
         }
 
         let mut full_response = String::new();
+        let mut raw_response = String::new();
         let mut buffer = String::new();
         let mut stream = resp.bytes_stream();
         let mut saw_done = false;
@@ -271,7 +344,9 @@ impl AiClient {
         use futures_util::StreamExt;
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
+            let chunk_text = String::from_utf8_lossy(&chunk);
+            raw_response.push_str(&chunk_text);
+            buffer.push_str(&chunk_text);
 
             let (tokens, done) = collect_stream_tokens(&mut buffer, false);
             for token in tokens {
@@ -293,6 +368,17 @@ impl AiClient {
             }
         }
 
+        if full_response.trim().is_empty() {
+            if let Some(content) = parse_non_stream_chat_response(&raw_response) {
+                on_token(&content);
+                return Ok(content);
+            }
+
+            return Err(AppError::Parse(
+                "AI stream ended without text content / AI 流式响应没有文本内容".into(),
+            ));
+        }
+
         Ok(full_response)
     }
 
@@ -305,7 +391,10 @@ impl AiClient {
 
 #[cfg(test)]
 mod tests {
-    use super::collect_stream_tokens;
+    use super::{
+        AiConfig, ChatResponse, collect_stream_tokens, extract_chat_content,
+        parse_non_stream_chat_response, sanitize_provider_error_body,
+    };
 
     fn token_line(content: &str) -> String {
         format!("data: {{\"choices\":[{{\"delta\":{{\"content\":\"{}\"}}}}]}}", content)
@@ -352,5 +441,45 @@ mod tests {
         assert_eq!(tokens, vec!["A"]);
         assert!(done);
         assert!(buffer.is_empty());
+    }
+
+    #[test]
+    fn config_requires_endpoint_key_and_model() {
+        let config = AiConfig {
+            endpoint: "https://example.com/v1".into(),
+            api_key: " ".into(),
+            model: "model".into(),
+            temperature: 0.2,
+            max_tokens: 128,
+        };
+
+        assert!(!config.is_configured());
+    }
+
+    #[test]
+    fn provider_error_body_is_redacted_and_truncated() {
+        let sk_like = ["sk", "secret1234567890"].join("-");
+        let tp_like = ["tp", "secret1234567890"].join("-");
+        let body = format!("Authorization: Bearer {sk_like} token {tp_like} {}", "x".repeat(900));
+        let sanitized = sanitize_provider_error_body(&body);
+
+        assert!(sanitized.contains("[REDACTED"));
+        assert!(!sanitized.contains(&sk_like));
+        assert!(!sanitized.contains(&tp_like));
+        assert!(sanitized.len() < body.len());
+    }
+
+    #[test]
+    fn non_stream_json_response_can_backstop_streaming_clients() {
+        let raw = r#"{"choices":[{"message":{"content":"Fallback content"}}]}"#;
+
+        assert_eq!(parse_non_stream_chat_response(raw).as_deref(), Some("Fallback content"));
+    }
+
+    #[test]
+    fn empty_chat_response_is_parse_error() {
+        let response: ChatResponse = serde_json::from_str(r#"{"choices":[]}"#).unwrap();
+
+        assert!(extract_chat_content(response).is_err());
     }
 }

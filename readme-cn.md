@@ -346,6 +346,20 @@ cargo build --release --locked
 
 如果当前环境无法访问 crates.io，建议优先使用本地诊断或离线缓存做验证。
 
+### Live AI 冒烟测试
+
+仓库内置了一个默认忽略的 OpenAI-compatible live 测试。服务参数只应通过环境变量传入，不要把 endpoint、model、token 或本地媒体路径提交到源码：
+
+```bash
+AI_MOVIE_PLAYER_LIVE_ENDPOINT="https://example.com/v1" \
+AI_MOVIE_PLAYER_LIVE_API_KEY="your-api-key" \
+AI_MOVIE_PLAYER_LIVE_MODEL="your-model" \
+AI_MOVIE_PLAYER_LIVE_VIDEO_PATH="/path/to/movie.mp4" \
+cargo test --test ai_live -- --ignored --nocapture
+```
+
+测试会从本地文件生成影片上下文，但只发送文件名、文件大小和可检测到的媒体特征等隐私友好的元数据。
+
 ## 文档
 
 - 英文文档： [README.md](README.md)

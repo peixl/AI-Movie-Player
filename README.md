@@ -343,6 +343,20 @@ cargo build --release --locked
 
 If your environment cannot reach crates.io, use local diagnostics or offline caches for validation when possible.
 
+### Live AI Smoke Test
+
+The repository includes an ignored live test for OpenAI-compatible providers. Keep provider details in environment variables and do not commit endpoint, model, token, or local media paths:
+
+```bash
+AI_MOVIE_PLAYER_LIVE_ENDPOINT="https://example.com/v1" \
+AI_MOVIE_PLAYER_LIVE_API_KEY="your-api-key" \
+AI_MOVIE_PLAYER_LIVE_MODEL="your-model" \
+AI_MOVIE_PLAYER_LIVE_VIDEO_PATH="/path/to/movie.mp4" \
+cargo test --test ai_live -- --ignored --nocapture
+```
+
+The test builds movie context from the local file while sending only privacy-safe metadata such as the filename, file size, and detected media traits.
+
 For packaging smoke checks, use the same scripts that GitHub Actions uses:
 
 ```bash
