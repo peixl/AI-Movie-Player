@@ -46,7 +46,9 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "AI-Movie-Player",
         options,
-        Box::new(|_cc| {
+        Box::new(|cc| {
+            ai_movie_player::ui::fonts::install(&cc.egui_ctx);
+
             let app = MovieBoxApp::new(app_data_dir);
             Ok(Box::new(app))
         }),

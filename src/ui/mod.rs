@@ -28,6 +28,7 @@ pub mod ai_chat_panel;
 pub mod ai_recommend_panel;
 pub mod animation;
 pub mod batch_ops;
+pub mod fonts;
 pub mod icons;
 pub mod layout;
 pub mod movie_detail;
