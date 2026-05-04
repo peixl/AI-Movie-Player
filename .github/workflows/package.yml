@@ -1,6 +1,5 @@
 name: Package
-
-"on":
+on:
   push:
     tags:
       - "v*"
