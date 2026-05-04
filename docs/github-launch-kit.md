@@ -2,7 +2,7 @@
 
 English | [简体中文](github-launch-kit-cn.md)
 
-This document is a maintainer-facing kit for polishing the public GitHub presentation of AI-Movie-Player.
+This document is a maintainer-facing kit for polishing the public GitHub presentation of AI Movie Player.
 
 ## Recommended Repo Description
 
@@ -105,18 +105,18 @@ Recommended ordering:
 
 Recommended stable release format:
 
-- `AI-Movie-Player v0.2.1`
+- `AI Movie Player v0.2.1`
 
 Recommended preview format:
 
-- `AI-Movie-Player v0.3.0-beta.1`
+- `AI Movie Player v0.3.0-beta.1`
 
 ## Release Notes Template
 
 ```md
-## AI-Movie-Player v0.2.1
+## AI Movie Player v0.2.1
 
-AI-Movie-Player is an AI-native local movie library companion, built to make metadata, subtitles, recommendations, system-player launch, and cinematic conversation feel natural and refined.
+AI Movie Player is an AI-native local movie library companion, built to make metadata, subtitles, recommendations, system-player launch, and cinematic conversation feel natural and refined.
 
 ### Highlights
 - Added guided AI viewing workflows: pre-watch briefing, post-watch recap, and double-feature pairing.

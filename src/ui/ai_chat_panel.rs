@@ -1,4 +1,4 @@
-//! AI-Movie-Player chat panel with streaming, presets, and multi-turn memory.
+//! AI Movie Player chat panel with streaming, presets, and multi-turn memory.
 
 use std::sync::{Arc, Mutex};
 
@@ -479,7 +479,7 @@ impl AiChatPanel {
                             );
                             ui.add_space(12.0);
                             ui.label(
-                                RichText::new("AI-Movie-Player · Cinematic Intelligence")
+                                RichText::new("AI Movie Player · Cinematic Intelligence")
                                     .size(16.0)
                                     .color(dim),
                             );

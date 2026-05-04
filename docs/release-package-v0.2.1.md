@@ -2,16 +2,16 @@
 
 English | [简体中文](release-package-v0.2.1-cn.md)
 
-This is the first formal GitHub Releases package for AI-Movie-Player.
+This is the first formal GitHub Releases package for AI Movie Player.
 
 ## Release Title
 
-`AI-Movie-Player v0.2.1`
+`AI Movie Player v0.2.1`
 
 ## Release Body
 
 ```md
-AI-Movie-Player is an AI-native local movie library companion, built to make metadata, subtitles, recommendations, system-player launch, and cinematic conversation feel natural, refined, and genuinely useful.
+AI Movie Player is an AI-native local movie library companion, built to make metadata, subtitles, recommendations, system-player launch, and cinematic conversation feel natural, refined, and genuinely useful.
 
 ### Highlights
 - Added guided AI viewing workflows: pre-watch briefing, post-watch recap, and double-feature pairing.
@@ -72,7 +72,7 @@ Use this shorter upgrade block if you need a compact release note section:
 ### Short Announcement
 
 ```text
-AI-Movie-Player v0.2.1 is live.
+AI Movie Player v0.2.1 is live.
 
 This release deepens the product in three directions: structured AI viewing workflows, cleaner bilingual documentation, and a more polished GitHub launch surface.
 
@@ -85,7 +85,7 @@ by ifq.ai
 ### Longer Announcement
 
 ```text
-AI-Movie-Player v0.2.1 is the first release that starts to feel like the product we actually want to build.
+AI Movie Player v0.2.1 is the first release that starts to feel like the product we actually want to build.
 
 It is still an early local-library movie companion, but now the AI side is more deliberate: instead of only offering prompt shortcuts, it can generate structured viewing workflow cards for pre-watch framing, post-watch recap, and double-feature pairing. The detail page can also launch the stored local file through the system default player.
 

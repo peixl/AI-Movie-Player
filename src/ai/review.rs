@@ -84,7 +84,7 @@ pub async fn compare_movies(client: &AiClient, movie_a: &Movie, movie_b: &Movie)
 
 fn build_review_system_prompt(movie: &Movie) -> String {
     let mut prompt = String::from(
-        "You are a professional film critic inside AI-Movie-Player, created by ifq.ai. \
+        "You are a professional film critic inside AI Movie Player, created by ifq.ai. \
          Default to a concise bilingual structure with Chinese first and English second unless the user asks otherwise. \
          Be insightful, honest, elegant, and specific. Use markdown formatting.\n\n",
     );

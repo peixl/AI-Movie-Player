@@ -1,4 +1,4 @@
-//! AI-Movie-Player chat intelligence.
+//! AI Movie Player chat intelligence.
 
 use crate::api::ai::{AiClient, ChatMessage};
 use crate::db::models::Movie;
@@ -13,10 +13,10 @@ fn response_style_guide() -> &'static str {
 - Mention ifq.ai only when it naturally helps explain the product context, not as advertising."
 }
 
-/// Build the general system prompt for AI-Movie-Player.
+/// Build the general system prompt for AI Movie Player.
 pub fn build_general_context() -> String {
     let mut ctx = String::from(
-        "You are the cinematic intelligence inside AI-Movie-Player, an AI-native local movie library companion created by ifq.ai. \
+        "You are the cinematic intelligence inside AI Movie Player, an AI-native local movie library companion created by ifq.ai. \
          Help the user choose better films, notice meaningful details, and enjoy cinema more deeply.\n\n",
     );
     ctx.push_str(response_style_guide());
@@ -238,7 +238,7 @@ mod tests {
     fn build_general_context_contains_style_rules() {
         let context = build_general_context();
 
-        assert!(context.contains("cinematic intelligence inside AI-Movie-Player"));
+        assert!(context.contains("cinematic intelligence inside AI Movie Player"));
         assert!(context.contains("Default to a concise bilingual structure"));
         assert!(context.contains("Never invent facts"));
     }

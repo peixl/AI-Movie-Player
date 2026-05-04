@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cross-platform GitHub Actions CI.
 
 ### Changed
-- Rebranded the project to AI-Movie-Player with subtle ifq.ai attribution.
+- Rebranded the project to AI Movie Player with subtle ifq.ai attribution.
 - Updated core UI copy to a bilingual Chinese-English style where it improves usability.
 - Upgraded AI prompts for more natural, elegant, and context-aware answers.
 - Enabled real multi-turn chat context.

@@ -83,7 +83,7 @@ pub struct MovieBoxApp {
 
 impl MovieBoxApp {
     pub fn new(app_data_dir: PathBuf) -> Self {
-        log::info!("Starting AI-Movie-Player v{} · ifq.ai", env!("CARGO_PKG_VERSION"));
+        log::info!("Starting AI Movie Player v{} · ifq.ai", env!("CARGO_PKG_VERSION"));
         log::info!("Data directory: {}", app_data_dir.display());
 
         let db = connection::open_database(&app_data_dir).expect("Failed to open database");
@@ -628,7 +628,7 @@ impl eframe::App for MovieBoxApp {
                     "TMDB 未设置 / not set"
                 };
                 ui.label(format!(
-                    "AI-Movie-Player | {} movies | {} | ifq.ai",
+                    "AI Movie Player | {} movies | {} | ifq.ai",
                     self.cached_movie_count, tmdb_status
                 ));
 

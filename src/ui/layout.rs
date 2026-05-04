@@ -156,7 +156,7 @@ impl AppLayout {
             ui.horizontal(|ui| {
                 super::icons::draw_icon(ui, "film", 24.0, primary);
                 ui.add_space(6.0);
-                ui.label(RichText::new("AI-Movie-Player").size(18.0).color(text).strong());
+                ui.label(RichText::new("AI Movie Player").size(18.0).color(text).strong());
             });
         });
         ui.add_space(16.0);

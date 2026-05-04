@@ -28,7 +28,7 @@ FROM debian:bookworm-slim AS runtime
 
 ARG APP_VERSION=dev
 
-LABEL org.opencontainers.image.title="AI-Movie-Player" \
+LABEL org.opencontainers.image.title="AI Movie Player" \
       org.opencontainers.image.description="AI-native local movie library companion" \
       org.opencontainers.image.url="https://github.com/peixl/AI-Movie-Player" \
       org.opencontainers.image.source="https://github.com/peixl/AI-Movie-Player" \

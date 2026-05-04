@@ -1,4 +1,4 @@
-# AI-Movie-Player
+# AI Movie Player
 
 An AI-native local movie library companion for people who care about cinema, not just files.
 
@@ -14,13 +14,13 @@ Built by [ifq.ai](https://ifq.ai) and open sourced at [peixl/AI-Movie-Player](ht
 
 ## Overview
 
-AI-Movie-Player is an early-stage desktop companion for local movie libraries, built with Rust and egui. It combines library management, TMDB metadata, subtitles, poster-wall browsing, system-player launch, and OpenAI-compatible AI features in one quiet, cinema-first experience.
+AI Movie Player is an early-stage desktop companion for local movie libraries, built with Rust and egui. It combines library management, TMDB metadata, subtitles, poster-wall browsing, system-player launch, and OpenAI-compatible AI features in one quiet, cinema-first experience.
 
 This project is designed to feel more like a thoughtful film tool than a generic media utility. The AI is there to help you choose, understand, and revisit films naturally, not to dominate the product.
 
 ## Current Status
 
-AI-Movie-Player is currently a beta-quality local library app, not a fully embedded media playback engine. From a movie detail page it can launch the local file with the operating system's default player; native playback controls inside the app are on the roadmap.
+AI Movie Player is currently a beta-quality local library app, not a fully embedded media playback engine. From a movie detail page it can launch the local file with the operating system's default player; native playback controls inside the app are on the roadmap.
 
 ## Tech Stack
 
@@ -80,7 +80,7 @@ graph TB
 
 The application entry point owns navigation and shared state in app.rs. UI panels stay focused on rendering and interaction, while domain services under src/core and src/ai handle library, metadata, subtitles, and AI workflows. Database access stays under src/db, and release automation is driven by the scripts directory plus GitHub Actions workflows.
 
-## Why AI-Movie-Player
+## Why AI Movie Player
 
 - AI companion chat with real multi-turn memory for a selected film.
 - Taste-aware recommendations generated from your own library.
@@ -116,7 +116,7 @@ From the movie detail view, you can jump into AI insight for a compact review, a
 
 ### OpenAI-Compatible Providers
 
-AI-Movie-Player works with:
+AI Movie Player works with:
 
 - OpenAI
 - Azure OpenAI
@@ -126,7 +126,7 @@ AI-Movie-Player works with:
 
 ### Guided Viewing Workflows
 
-AI-Movie-Player now exposes a more deliberate viewing loop around a selected film:
+AI Movie Player now exposes a more deliberate viewing loop around a selected film:
 
 - Pre-Watch Briefing to frame mood, context, and what details matter before playback.
 - Post-Watch Recap to help the viewer process meaning, structure, and memorable choices.
@@ -146,7 +146,7 @@ AI-Movie-Player now exposes a more deliberate viewing loop around a selected fil
 
 ## Compared with a Typical Player
 
-| Capability | Typical Player | AI-Movie-Player |
+| Capability | Typical Player | AI Movie Player |
 | --- | --- | --- |
 | Playback model | Embedded controls | System-player launch today; embedded controls planned |
 | TMDB metadata enrichment | Sometimes | Built in |
@@ -352,7 +352,7 @@ If your environment has intermittent Cargo registry access, the scripts director
 
 ### Is this a streaming app?
 
-No. AI-Movie-Player is designed around local movie libraries and personal media workflows.
+No. AI Movie Player is designed around local movie libraries and personal media workflows.
 
 ### Does it include an embedded video player?
 

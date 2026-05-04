@@ -1,8 +1,8 @@
-# Contributing to AI-Movie-Player
+# Contributing to AI Movie Player
 
 English | [简体中文](contributing-cn.md)
 
-Contributions are welcome across product design, AI workflows, UI polish, documentation, and engineering quality. AI-Movie-Player is not trying to become a noisy feature pile. Good contributions make the app feel clearer, calmer, more useful, and more trustworthy.
+Contributions are welcome across product design, AI workflows, UI polish, documentation, and engineering quality. AI Movie Player is not trying to become a noisy feature pile. Good contributions make the app feel clearer, calmer, more useful, and more trustworthy.
 
 ## Getting Started
 
@@ -169,4 +169,4 @@ Look for issues labeled [`good first issue`](https://github.com/peixl/AI-Movie-P
 
 ## Product Direction
 
-AI-Movie-Player aims for quiet premium quality. When changing UI, copy, or AI behavior, prefer what feels more natural, restrained, and trustworthy.
+AI Movie Player aims for quiet premium quality. When changing UI, copy, or AI behavior, prefer what feels more natural, restrained, and trustworthy.

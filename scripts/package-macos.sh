@@ -55,13 +55,13 @@ cat > "$app_root/Contents/Info.plist" <<EOF
 <plist version="1.0">
   <dict>
     <key>CFBundleDisplayName</key>
-    <string>AI-Movie-Player</string>
+    <string>AI Movie Player</string>
     <key>CFBundleExecutable</key>
     <string>AI-Movie-Player</string>
     <key>CFBundleIdentifier</key>
     <string>ai.ifq.AIMoviePlayer</string>
     <key>CFBundleName</key>
-    <string>AI-Movie-Player</string>
+    <string>AI Movie Player</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

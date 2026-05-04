@@ -1,4 +1,4 @@
-//! AI-Movie-Player: An AI-native local movie library companion for cinema lovers.
+//! AI Movie Player: An AI-native local movie library companion for cinema lovers.
 //!
 //! Built with Rust and egui, combining local library management, TMDB metadata,
 //! subtitles, system-player launch, poster-wall browsing, and OpenAI-compatible AI features.
@@ -38,13 +38,13 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1280.0, 800.0])
             .with_min_inner_size([900.0, 600.0])
-            .with_title(format!("AI-Movie-Player v{} · ifq.ai", env!("CARGO_PKG_VERSION")))
+            .with_title(format!("AI Movie Player v{} · ifq.ai", env!("CARGO_PKG_VERSION")))
             .with_icon(egui::IconData { rgba: vec![0; 32 * 32 * 4], width: 32, height: 32 }),
         ..Default::default()
     };
 
     eframe::run_native(
-        "AI-Movie-Player",
+        "AI Movie Player",
         options,
         Box::new(|cc| {
             ai_movie_player::ui::fonts::install(&cc.egui_ctx);

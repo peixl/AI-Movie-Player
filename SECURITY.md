@@ -11,7 +11,7 @@ English | [简体中文](#安全政策)
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in AI-Movie-Player, please report it responsibly.
+If you discover a security vulnerability in AI Movie Player, please report it responsibly.
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
@@ -33,7 +33,7 @@ Instead, please email: **security@ifq.ai**
 ### Scope
 
 This policy covers:
-- The AI-Movie-Player application code
+- The AI Movie Player application code
 - Build and release infrastructure
 - Dependencies with known security implications
 
@@ -63,7 +63,7 @@ This policy does not cover:
 
 ## 报告漏洞
 
-如果您发现 AI-Movie-Player 的安全漏洞，请负责任地报告。
+如果您发现 AI Movie Player 的安全漏洞，请负责任地报告。
 
 **请不要在公开的 GitHub Issue 中报告安全漏洞。**
 
@@ -85,7 +85,7 @@ This policy does not cover:
 ### 范围
 
 本政策覆盖：
-- AI-Movie-Player 应用代码
+- AI Movie Player 应用代码
 - 构建与发布基础设施
 - 有安全影响的依赖项
 

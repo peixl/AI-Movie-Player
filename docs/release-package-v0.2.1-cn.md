@@ -2,16 +2,16 @@
 
 [English](release-package-v0.2.1.md) | 简体中文
 
-这是 AI-Movie-Player 首个正式 GitHub Releases 发布包文案。
+这是 AI Movie Player 首个正式 GitHub Releases 发布包文案。
 
 ## 发布标题
 
-`AI-Movie-Player v0.2.1`
+`AI Movie Player v0.2.1`
 
 ## 发布正文
 
 ```md
-AI-Movie-Player 是一个面向本地片库的 AI 原生电影助手，目标是让元数据、字幕、推荐、系统播放器调用和电影对话都变得自然、优雅、真正有用。
+AI Movie Player 是一个面向本地片库的 AI 原生电影助手，目标是让元数据、字幕、推荐、系统播放器调用和电影对话都变得自然、优雅、真正有用。
 
 ### 本次亮点
 - 新增 AI 观影工作流：观影前 briefing、观影后复盘、双片连看建议。
@@ -72,7 +72,7 @@ Made with care by ifq.ai.
 ### 短公告
 
 ```text
-AI-Movie-Player v0.2.1 已发布。
+AI Movie Player v0.2.1 已发布。
 
 这次更新把产品往三个方向推进了一步：结构化 AI 观影工作流、更成熟的中英双语文档，以及更完整的 GitHub 发布面。
 
@@ -85,7 +85,7 @@ by ifq.ai
 ### 长公告
 
 ```text
-AI-Movie-Player v0.2.1 是第一个开始接近我们真正想做的产品状态的版本。
+AI Movie Player v0.2.1 是第一个开始接近我们真正想做的产品状态的版本。
 
 它仍然是一个本地片库电影助手，但 AI 部分已经更进一步：不再只有 prompt 快捷入口，而是能生成结构化的观影工作流卡片，用于观影前导览、观影后复盘和双片连看建议；详情页也可以直接调用系统默认播放器打开本地影片。
 

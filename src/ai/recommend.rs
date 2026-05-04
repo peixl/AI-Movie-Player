@@ -7,7 +7,7 @@ use crate::util::error::Result;
 /// Build a comprehensive system prompt from the user's library.
 pub fn build_library_context(library: &[Movie], watchlist: &[String]) -> String {
     let mut ctx = String::from(
-        "You are the taste intelligence inside AI-Movie-Player, created by ifq.ai. \
+        "You are the taste intelligence inside AI Movie Player, created by ifq.ai. \
          Analyze the user's library and deliver recommendations that feel personal, elegant, and precise.\n\n\
          Response rules:\n\
          - Default to concise bilingual output with Chinese first and English second unless the user asks otherwise.\n\

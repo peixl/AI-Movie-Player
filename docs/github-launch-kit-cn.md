@@ -2,7 +2,7 @@
 
 [English](github-launch-kit.md) | 简体中文
 
-这是一份给维护者使用的 GitHub 发布面整理文档，用来统一 AI-Movie-Player 在仓库首页、Releases、About 区域和截图素材上的对外表达。
+这是一份给维护者使用的 GitHub 发布面整理文档，用来统一 AI Movie Player 在仓库首页、Releases、About 区域和截图素材上的对外表达。
 
 ## 推荐的 Repo Description
 
@@ -105,18 +105,18 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 
 稳定版建议格式：
 
-- `AI-Movie-Player v0.2.1`
+- `AI Movie Player v0.2.1`
 
 预览版建议格式：
 
-- `AI-Movie-Player v0.3.0-beta.1`
+- `AI Movie Player v0.3.0-beta.1`
 
 ## Release 文案模板
 
 ```md
-## AI-Movie-Player v0.2.1
+## AI Movie Player v0.2.1
 
-AI-Movie-Player 是一个面向本地片库的 AI 原生电影助手，目标是让元数据、字幕、推荐、系统播放器调用和电影对话都变得自然、优雅、可信。
+AI Movie Player 是一个面向本地片库的 AI 原生电影助手，目标是让元数据、字幕、推荐、系统播放器调用和电影对话都变得自然、优雅、可信。
 
 ### 本次亮点
 - 新增 AI 观影工作流：观影前 briefing、观影后复盘、双片连看建议。
