@@ -15,7 +15,7 @@ categories = ["multimedia", "gui"]
 [dependencies]
 # GUI
 eframe = "0.31"
-egui = "0.31"
+egui = "0.32"
 egui_extras = { version = "0.31", features = ["all_loaders"] }
 
 # Async
