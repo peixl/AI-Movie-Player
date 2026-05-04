@@ -59,13 +59,14 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 
 ## 截图清单
 
-优先准备这 5 张：
+v0.2.1 已经有正式 release 资产，截图现在是最重要的剩余信任缺口。优先准备这 6 张：
 
 1. 一个观感好的海报墙片库截图。
 2. 展示多轮上下文的 AI Companion 对话截图。
-3. AI 推荐页截图。
-4. 电影详情页截图，带元数据、Open 动作和 AI 入口。
-5. 字幕搜索流程截图。
+3. 展示观影前 briefing 或观影后复盘的结构化工作流卡片。
+4. AI 推荐页截图。
+5. 电影详情页截图，带元数据、Open 动作和 AI 入口。
+6. 字幕搜索流程截图。
 
 截图原则：
 
@@ -134,6 +135,32 @@ AI Movie Player 是一个面向本地片库的 AI 原生电影助手，目标是
 
 Made with care by ifq.ai.
 ```
+
+## 新手 Issue 包
+
+仓库外部贡献者还少时，更要保留一组可见、可认领的新手任务，避免项目看起来像只允许内部维护。种子清单见 [starter-issues-cn.md](starter-issues-cn.md)。
+
+建议第一批创建：
+
+- 给 README 和 release notes 添加真实截图。
+- 为 filename parser 补充常见发布命名测试。
+- 补充 TMDB Key 首次配置文档。
+- 增加 Ollama 和 LM Studio 诊断示例。
+- 增加 Windows PowerShell 校验和验证示例。
+
+好的新手 issue 应该包含明确范围、验收标准，以及一个验证命令或手动 smoke check。
+
+## GitHub 配置清单
+
+- [ ] 设置 repository description：`AI-native local movie library companion with system-player launch, cinematic chat, recommendations, metadata, subtitles, and poster-wall browsing.`
+- [ ] 设置 repository website：`https://ifq.ai`
+- [ ] 添加推荐 topics
+- [ ] 启用 Discussions 并配置分类
+- [ ] 上传 1280x640px social preview image
+- [ ] 创建 5-10 个来自 `docs/starter-issues-cn.md` 的新手 issue
+- [ ] 配置 main 分支保护
+- [ ] 启用 Security tab 的 vulnerability alerts
+- [ ] 确认 Dependabot 已启用
 
 ## GitHub 首页叙事顺序
 

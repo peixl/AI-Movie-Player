@@ -132,6 +132,19 @@ AI Movie Player now exposes a more deliberate viewing loop around a selected fil
 - Post-Watch Recap to help the viewer process meaning, structure, and memorable choices.
 - Double Feature Pairing to recommend a second film that deepens the first instead of merely resembling it.
 
+## AI Grounding Examples
+
+The AI features are designed to use the movie and library context already available in the app, not to behave like a detached chatbot.
+
+| Workflow | Context used | Good prompt | Expected shape |
+| --- | --- | --- | --- |
+| AI Companion | Selected movie title, year, director, genres, overview, cast, rating, and chat history. | `Give me a spoiler-light briefing before I watch this.` | Mood, premise boundaries, what to notice, and uncertainty when metadata is thin. |
+| AI Review | Movie detail fields plus the user's question. | `Is this a good late-night watch, and why?` | Compact verdict, audience fit, strengths, weaknesses, and viewing guidance. |
+| AI Taste Engine | Local library titles, genres, watchlist state, ratings, and visible metadata. | `What should I watch next from my own library?` | A ranked recommendation with evidence from the library, not generic genre guessing. |
+| Double Feature | Selected movie plus library/taste context when available. | `Pair this with something that changes how I read it.` | One focused pairing, a reasoned contrast or echo, and what the second film adds. |
+
+Good AI output should say when facts are missing, avoid invented trivia, and explain recommendations through available evidence.
+
 ## Core Product Areas
 
 | Area | What it does |
@@ -158,17 +171,18 @@ AI Movie Player now exposes a more deliberate viewing loop around a selected fil
 
 ## Visual Preview
 
-Public screenshots and a short demo clip are part of the v0.2.x launch checklist. The first preview set should show the poster wall, selected-movie AI Companion, AI Taste Engine, movie detail page with the Open action, and subtitle search flow.
+Native v0.2.1 release assets are published, but public screenshots and a short demo clip remain the biggest missing trust signal. The first preview set should show the poster wall, selected-movie AI Companion, AI Taste Engine, movie detail page with the Open action, and subtitle search flow.
 
 ## Getting Started
 
 ### Prebuilt Binaries
 
-The release workflow is configured for Windows, macOS, and Linux packages. Once release assets are published, download the latest build from the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page:
+The release workflow publishes Windows, macOS, and Linux packages. Download the latest build from the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page:
 
 - **Windows**: `.zip` archive
 - **macOS**: `.tar.gz` containing an `.app` bundle
 - **Linux**: `.tar.gz` archive
+- **Checksums**: one `.sha256` file next to each archive
 
 GitHub Packages is published as an OCI package at `ghcr.io/peixl/ai-movie-player` for release tags. The native Release assets remain the recommended download path for desktop users.
 
@@ -187,6 +201,20 @@ git clone https://github.com/peixl/AI-Movie-Player.git
 cd AI-Movie-Player
 cargo run --release
 ```
+
+## Quick Demo Path
+
+Use a tiny test library before scanning a real collection:
+
+1. Put one or two files in a folder using clean names such as `Dune (2021).mkv` or `Inception (2010).mp4`.
+2. Open Settings and add a TMDB API key if you want posters, cast, runtime, and summaries.
+3. Import the folder, then open the poster wall and select one movie.
+4. Open the movie detail page to confirm metadata, poster, file path, and the Open action.
+5. Configure an OpenAI-compatible provider only if you want AI features.
+6. Ask AI Companion for a spoiler-light pre-watch briefing.
+7. Try Double Feature Pairing to see how the app turns one selected movie into a viewing path.
+
+Without AI keys, the local library, metadata, poster, watchlist, subtitle, and system-player launch workflows remain usable.
 
 ## AI Setup
 
@@ -336,11 +364,13 @@ If your environment has intermittent Cargo registry access, the scripts director
 - Security policy: [SECURITY.md](SECURITY.md)
 - GitHub launch kit: [docs/github-launch-kit.md](docs/github-launch-kit.md)
 - GitHub 中文发布说明: [docs/github-launch-kit-cn.md](docs/github-launch-kit-cn.md)
+- Starter issue pack: [docs/starter-issues.md](docs/starter-issues.md)
 
 ## Roadmap
 
-- Publish the first public GitHub release with Windows, macOS, Linux artifacts, and SHA256 checksums.
+- Keep v0.2.x GitHub releases verified with Windows, macOS, Linux artifacts, SHA256 checksums, and polished release notes.
 - Add real screenshots and a short GIF/video demo to the repository homepage and release page.
+- Maintain a starter issue pack with `good first issue` and `help wanted` tasks that map to the roadmap.
 - Move API keys from plaintext SQLite storage to system credential storage where available.
 - Explore embedded playback controls while keeping system-player launch available as the reliable fallback.
 - Deepen the AI viewing workflows so they feel like part of watching, not just chat after the fact.

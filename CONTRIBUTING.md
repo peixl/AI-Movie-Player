@@ -167,6 +167,8 @@ Use the [PR template](.github/PULL_REQUEST_TEMPLATE.md) when opening a pull requ
 
 Look for issues labeled [`good first issue`](https://github.com/peixl/AI-Movie-Player/labels/good%20first%20issue) to get started. These are scoped to be approachable for new contributors.
 
+Maintainers seed those issues from [docs/starter-issues.md](docs/starter-issues.md). A good starter issue should have clear scope, acceptance criteria, and one validation path.
+
 ## Product Direction
 
 AI Movie Player aims for quiet premium quality. When changing UI, copy, or AI behavior, prefer what feels more natural, restrained, and trustworthy.

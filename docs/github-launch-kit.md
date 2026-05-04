@@ -59,13 +59,14 @@ Suggested supporting line options:
 
 ## Screenshot Shot List
 
-Capture these first:
+Capture these first. Screenshots are now the most important remaining trust gap after the v0.2.1 release assets:
 
 1. Poster wall with a tasteful, real-looking library.
 2. AI Companion discussing a single film with multi-turn context visible.
-3. AI Taste Engine recommendation screen.
-4. Movie detail page with metadata, cast, Open action, and AI entry point.
-5. Subtitle search flow.
+3. Workflow Studio or guided viewing card showing pre-watch briefing or post-watch recap.
+4. AI Taste Engine recommendation screen.
+5. Movie detail page with metadata, cast, Open action, and AI entry point.
+6. Subtitle search flow.
 
 Screenshot principles:
 
@@ -135,6 +136,20 @@ AI Movie Player is an AI-native local movie library companion, built to make met
 Made with care by ifq.ai.
 ```
 
+## Starter Issue Pack
+
+Keep a visible set of starter issues so the repository does not look closed even when there are few external contributors. Use [starter-issues.md](starter-issues.md) as the seed list.
+
+Recommended first wave:
+
+- Add real screenshots to README and release notes.
+- Add filename parser test cases for common release naming patterns.
+- Document TMDB key onboarding with first-run screenshots.
+- Add provider diagnostics examples for Ollama and LM Studio.
+- Add release checksum verification examples for Windows PowerShell.
+
+Good first issues should include a narrow scope, acceptance criteria, and one validation command or manual smoke check.
+
 ## Homepage Story Order
 
 For the README and repo landing experience, keep the story in this order:
@@ -161,6 +176,7 @@ For the README and repo landing experience, keep the story in this order:
 
 - [ ] Enable issue templates (already in `.github/ISSUE_TEMPLATE/`)
 - [ ] Enable PR template (already in `.github/PULL_REQUEST_TEMPLATE.md`)
+- [ ] Create 5-10 starter issues from `docs/starter-issues.md`
 - [ ] Configure branch protection for `main` (require PR reviews)
 - [ ] Enable vulnerability alerts in Security tab
 - [ ] Enable Dependabot for dependency updates

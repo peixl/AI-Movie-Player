@@ -17,7 +17,7 @@
 ```bash
 git clone https://github.com/peixl/AI-Movie-Player.git
 cd AI-Movie-Player
-cargo build
+cargo build --locked
 ```
 
 ### 运行
@@ -32,9 +32,10 @@ cargo run --release
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets -- -D warnings
-cargo test
-cargo build --release
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+cargo doc --no-deps --locked
+cargo build --release --locked
 ```
 
 如果当前环境无法访问 crates.io，优先使用本地诊断或离线缓存，并在验证说明中写清限制。
@@ -151,6 +152,8 @@ refactor/extract-theme-helpers
 ## 好的首次贡献
 
 查找标记为 [`good first issue`](https://github.com/peixl/AI-Movie-Player/labels/good%20first%20issue) 的 issue 开始贡献。这些问题的范围适合新贡献者。
+
+维护者会从 [docs/starter-issues-cn.md](docs/starter-issues-cn.md) 中挑选任务创建 issue。好的新手任务应该有明确范围、验收标准和一个可执行的验证方式。
 
 ## 产品方向
 

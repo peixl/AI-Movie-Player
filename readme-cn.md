@@ -149,6 +149,19 @@ AI Movie Player 现在开始把 AI 能力做成更自然的观影流程，而不
 - 观影后复盘：在片尾之后帮助用户整理主题、结构和关键选择。
 - 双片连看建议：推荐一部真正能放大第一部电影价值的搭配影片，而不是偷懒的同类型相似片。
 
+## AI 上下文样例
+
+AI 功能会尽量使用应用已经掌握的影片和片库上下文，而不是表现成一个脱离场景的普通聊天框。
+
+| 工作流 | 使用的上下文 | 适合的提问 | 理想输出形态 |
+| --- | --- | --- | --- |
+| AI Companion | 当前影片的片名、年份、导演、类型、简介、演员、评分和对话历史。 | `给我一份不剧透的观影前 briefing。` | 情绪基调、前提边界、值得留意的细节，以及元数据不足时的说明。 |
+| AI Review | 电影详情字段和用户问题。 | `这部片适合深夜看吗，为什么？` | 简短判断、适合人群、优点、不足和观影建议。 |
+| AI Taste Engine | 本地片库标题、类型、片单状态、评分和可见元数据。 | `从我自己的片库里推荐下一部。` | 带依据的排序推荐，而不是泛泛的类型猜测。 |
+| 双片连看 | 当前影片，以及可用的片库和口味上下文。 | `帮我搭配一部能改变我理解角度的电影。` | 一个聚焦的搭配选择、清楚的呼应或反差，以及第二部带来的增量。 |
+
+好的 AI 输出应该在信息不足时明确说明，避免编造幕后事实，并用已有证据解释推荐理由。
+
 ## 核心模块
 
 | 模块 | 说明 |
@@ -175,17 +188,18 @@ AI Movie Player 现在开始把 AI 能力做成更自然的观影流程，而不
 
 ## 视觉预览
 
-公开截图和短 GIF/视频 demo 已列入 v0.2.x 发布清单。第一组预览应优先展示海报墙、选中电影后的 AI Companion、AI Taste Engine、带 Open 动作的电影详情页，以及字幕搜索流程。
+v0.2.1 已经发布原生系统安装包，但公开截图和短 GIF/视频 demo 仍然是当前最需要补齐的信任信号。第一组预览应优先展示海报墙、选中电影后的 AI Companion、AI Taste Engine、带 Open 动作的电影详情页，以及字幕搜索流程。
 
 ## 快速开始
 
 ### 预编译版本
 
-项目已经配置 Windows、macOS、Linux 的发布打包工作流。发布资产上传后，可以从 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面下载适合您平台的最新版本：
+项目已经通过发布工作流提供 Windows、macOS、Linux 安装包。可以从 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面下载适合您平台的最新版本：
 
 - **Windows**: `.zip` 压缩包
 - **macOS**: 包含 `.app` bundle 的 `.tar.gz`
 - **Linux**: `.tar.gz` 压缩包
+- **校验和**: 每个压缩包旁边都有对应的 `.sha256` 文件
 
 GitHub Packages 会随发布标签同步发布 OCI 包：`ghcr.io/peixl/ai-movie-player`。桌面用户仍建议优先下载 Releases 页面中的原生系统包。
 
@@ -204,6 +218,20 @@ git clone https://github.com/peixl/AI-Movie-Player.git
 cd AI-Movie-Player
 cargo run --release
 ```
+
+## 快速演示路径
+
+先用一个很小的测试片库验证流程，再扫描真实收藏：
+
+1. 建一个文件夹，放入一两个命名干净的文件，例如 `Dune (2021).mkv` 或 `Inception (2010).mp4`。
+2. 打开 Settings，填写 TMDB API Key，以便补全海报、演员、片长和简介。
+3. 导入这个文件夹，然后进入海报墙，选择其中一部电影。
+4. 打开电影详情页，确认元数据、海报、文件路径和 Open 动作都可用。
+5. 如果要体验 AI，再配置一个 OpenAI-compatible 提供方。
+6. 在 AI Companion 中请求一份不剧透的观影前 briefing。
+7. 再试一次双片连看建议，观察应用如何把单部电影扩展成观影路径。
+
+即使不配置 AI Key，本地片库、元数据、海报、片单、字幕和系统播放器调用流程仍然可以使用。
 
 ## AI 配置
 
@@ -329,11 +357,13 @@ cargo build --release --locked
 - 安全政策： [SECURITY.md](SECURITY.md)
 - GitHub 英文发布说明： [docs/github-launch-kit.md](docs/github-launch-kit.md)
 - GitHub 中文发布说明： [docs/github-launch-kit-cn.md](docs/github-launch-kit-cn.md)
+- 新手任务包： [docs/starter-issues-cn.md](docs/starter-issues-cn.md)
 
 ## 路线图
 
-- 发布第一个公开 GitHub Release，附带 Windows、macOS、Linux 包和 SHA256 校验和。
+- 持续验证 v0.2.x GitHub Release，确保 Windows、macOS、Linux 包、SHA256 校验和与发布说明保持一致。
 - 给仓库首页和 Release 页面补齐真实截图与短 GIF/视频 demo。
+- 维护一组可认领的新手任务，用 `good first issue` 和 `help wanted` 标签连接路线图与真实贡献入口。
 - 将 API Key 从明文 SQLite 存储迁移到可用平台的系统凭据存储。
 - 探索应用内原生播放控制，同时保留系统播放器调用作为稳定后备路径。
 - 继续把 AI 观影工作流做得更像观影的一部分，而不是看完后才补一句聊天。

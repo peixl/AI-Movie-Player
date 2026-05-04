@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Quick demo path in README to show the import, metadata, movie detail, AI briefing, and double-feature flow.
+- AI grounding examples that explain which movie and library context each AI workflow should use.
+- Starter issue pack for `good first issue` and `help wanted` roadmap tasks.
+
+### Changed
+- Updated launch documentation to treat screenshots, demo media, and visible starter issues as the remaining community-readiness gaps after v0.2.1.
+- Clarified README release wording now that native v0.2.1 assets and checksums are available.
+
 ## [0.2.1] - 2026-05-04
 
 ### Added
