@@ -1,6 +1,6 @@
 # AI-Movie-Player
 
-An AI-native movie player for people who care about cinema, not just files.
+An AI-native local movie library companion for people who care about cinema, not just files.
 
 English | [简体中文](readme-cn.md)
 
@@ -14,9 +14,13 @@ Built by [ifq.ai](https://ifq.ai) and open sourced at [peixl/AI-Movie-Player](ht
 
 ## Overview
 
-AI-Movie-Player is a desktop movie player and library companion built with Rust and egui. It combines local library management, TMDB metadata, subtitles, poster-wall browsing, and OpenAI-compatible AI features in one quiet, cinema-first experience.
+AI-Movie-Player is an early-stage desktop companion for local movie libraries, built with Rust and egui. It combines library management, TMDB metadata, subtitles, poster-wall browsing, system-player launch, and OpenAI-compatible AI features in one quiet, cinema-first experience.
 
 This project is designed to feel more like a thoughtful film tool than a generic media utility. The AI is there to help you choose, understand, and revisit films naturally, not to dominate the product.
+
+## Current Status
+
+AI-Movie-Player is currently a beta-quality local library app, not a fully embedded media playback engine. From a movie detail page it can launch the local file with the operating system's default player; native playback controls inside the app are on the roadmap.
 
 ## Tech Stack
 
@@ -80,6 +84,7 @@ The application entry point owns navigation and shared state in app.rs. UI panel
 
 - AI companion chat with real multi-turn memory for a selected film.
 - Taste-aware recommendations generated from your own library.
+- Open local movie files from the detail page through your system player.
 - AI quick insight and review flows directly from movie details.
 - TMDB-powered metadata enrichment for titles, cast, directors, ratings, and posters.
 - Subtitle discovery and download workflow for local collections.
@@ -132,6 +137,7 @@ AI-Movie-Player now exposes a more deliberate viewing loop around a selected fil
 | Area | What it does |
 | --- | --- |
 | Library | Scan folders, detect movie files, avoid duplicate imports, and organize a personal collection. |
+| Playback Launch | Open a stored local movie file with the operating system's default player from the detail page. |
 | Metadata | Enrich local media with TMDB titles, posters, cast, ratings, and synopsis. |
 | AI | Provide movie chat, quick insight, taste profiling, and recommendation workflows. |
 | Subtitles | Search and download subtitles from multiple sources for local playback. |
@@ -142,7 +148,7 @@ AI-Movie-Player now exposes a more deliberate viewing loop around a selected fil
 
 | Capability | Typical Player | AI-Movie-Player |
 | --- | --- | --- |
-| Open a file | Yes | Yes |
+| Playback model | Embedded controls | System-player launch today; embedded controls planned |
 | TMDB metadata enrichment | Sometimes | Built in |
 | AI conversation about a selected film | Rare | Native workflow |
 | Library-aware recommendations | Rare | Built in |
@@ -150,15 +156,21 @@ AI-Movie-Player now exposes a more deliberate viewing loop around a selected fil
 | Subtitle workflow | Basic | Search and download oriented |
 | Product tone | Utility-first | Cinema-first, quietly premium |
 
+## Visual Preview
+
+Public screenshots and a short demo clip are part of the v0.2.x launch checklist. The first preview set should show the poster wall, selected-movie AI Companion, AI Taste Engine, movie detail page with the Open action, and subtitle search flow.
+
 ## Getting Started
 
 ### Prebuilt Binaries
 
-Download the latest release for your platform from the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page:
+The release workflow is configured for Windows, macOS, and Linux packages. Once release assets are published, download the latest build from the [Releases](https://github.com/peixl/AI-Movie-Player/releases) page:
 
 - **Windows**: `.zip` archive
 - **macOS**: `.tar.gz` containing an `.app` bundle
 - **Linux**: `.tar.gz` archive
+
+If the Releases page does not yet show downloadable assets, build from source with the commands below.
 
 ### Requirements (from source)
 
@@ -324,10 +336,13 @@ If your environment has intermittent Cargo registry access, the scripts director
 
 ## Roadmap
 
+- Publish the first public GitHub release with Windows, macOS, Linux artifacts, and SHA256 checksums.
+- Add real screenshots and a short GIF/video demo to the repository homepage and release page.
+- Move API keys from plaintext SQLite storage to system credential storage where available.
+- Explore embedded playback controls while keeping system-player launch available as the reliable fallback.
 - Deepen the AI viewing workflows so they feel like part of watching, not just chat after the fact.
 - Improve subtitle quality ranking and source reliability.
 - Expand poster-wall scale, speed, and polish for larger personal libraries.
-- Strengthen release engineering and cross-platform packaging.
 - Add better onboarding for local AI providers and self-hosted endpoints.
 
 ## FAQ
@@ -335,6 +350,10 @@ If your environment has intermittent Cargo registry access, the scripts director
 ### Is this a streaming app?
 
 No. AI-Movie-Player is designed around local movie libraries and personal media workflows.
+
+### Does it include an embedded video player?
+
+Not yet. The app currently launches your stored local movie file in the system default player. Embedded playback controls are planned after the library, metadata, subtitle, release, and security foundations are stronger.
 
 ### Do I need an AI API key to use the app?
 

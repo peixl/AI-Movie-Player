@@ -1,6 +1,6 @@
 # AI-Movie-Player
 
-一个面向电影爱好者的 AI 原生播放器，不只是打开文件，更帮助你理解和经营自己的片库。
+一个面向电影爱好者的 AI 原生本地片库助手，不只是打开文件，更帮助你理解和经营自己的收藏。
 
 [English](README.md) | 简体中文
 
@@ -14,9 +14,13 @@
 
 ## 项目简介
 
-AI-Movie-Player 是一个基于 Rust 与 egui 构建的桌面电影播放器与片库助手。它把本地片库管理、TMDB 元数据、字幕工作流、海报墙浏览和 OpenAI-compatible AI 能力整合在一个更安静、更自然的电影体验里。
+AI-Movie-Player 是一个基于 Rust 与 egui 构建的早期桌面本地片库助手。它把本地片库管理、TMDB 元数据、字幕工作流、海报墙浏览、系统播放器调用和 OpenAI-compatible AI 能力整合在一个更安静、更自然的电影体验里。
 
 这个项目想做的不是"给播放器加一个 AI 按钮"，而是把"选片、看片、看后理解、片库管理"这整个链路做得更完整、更优雅。
+
+## 当前状态
+
+AI-Movie-Player 目前是 beta 阶段的本地片库应用，而不是已经内置完整播放内核的媒体播放器。电影详情页可以调用系统默认播放器打开本地影片文件；应用内原生播放控制仍在路线图中。
 
 ## 技术栈
 
@@ -97,6 +101,7 @@ graph TB
 
 - 针对单部电影的 AI 对话，并且支持真正的多轮上下文记忆。
 - 基于你自己的片库生成更有依据的推荐，而不是空泛的猜你喜欢。
+- 可以从电影详情页调用系统默认播放器打开本地影片文件。
 - 从详情页一键进入 AI 解析、短评和观影建议。
 - 使用 TMDB 自动补全标题、海报、导演、演员、评分和简介。
 - 提供多来源字幕搜索与下载能力，服务本地观影场景。
@@ -149,6 +154,7 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 | 模块 | 说明 |
 | --- | --- |
 | 片库 | 扫描文件夹、识别影片文件、避免重复导入，管理个人收藏。 |
+| 播放调用 | 从电影详情页用系统默认播放器打开已记录的本地影片文件。 |
 | 元数据 | 通过 TMDB 补全标题、海报、演员、评分与简介。 |
 | AI | 提供电影对话、AI 解析、观影画像和推荐流程。 |
 | 字幕 | 从多个来源搜索并下载适合本地媒体的字幕。 |
@@ -159,7 +165,7 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 
 | 能力 | 普通播放器 | AI-Movie-Player |
 | --- | --- | --- |
-| 打开本地文件 | 支持 | 支持 |
+| 播放模式 | 内置控制 | 当前调用系统播放器；内置播放控制在规划中 |
 | TMDB 元数据补全 | 有时支持 | 内建 |
 | 围绕单部电影的 AI 对话 | 少见 | 原生工作流 |
 | 基于片库的推荐 | 少见 | 内建 |
@@ -167,15 +173,21 @@ AI-Movie-Player 现在开始把 AI 能力做成更自然的观影流程，而不
 | 字幕工作流 | 基础能力 | 更偏向搜索与下载闭环 |
 | 产品气质 | 工具导向 | 电影导向，安静高级 |
 
+## 视觉预览
+
+公开截图和短 GIF/视频 demo 已列入 v0.2.x 发布清单。第一组预览应优先展示海报墙、选中电影后的 AI Companion、AI Taste Engine、带 Open 动作的电影详情页，以及字幕搜索流程。
+
 ## 快速开始
 
 ### 预编译版本
 
-从 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面下载适合您平台的最新版本：
+项目已经配置 Windows、macOS、Linux 的发布打包工作流。发布资产上传后，可以从 [Releases](https://github.com/peixl/AI-Movie-Player/releases) 页面下载适合您平台的最新版本：
 
 - **Windows**: `.zip` 压缩包
 - **macOS**: 包含 `.app` bundle 的 `.tar.gz`
 - **Linux**: `.tar.gz` 压缩包
+
+如果 Releases 页面暂时还没有可下载资产，请先按下方命令从源码运行。
 
 ### 环境要求（从源码构建）
 
@@ -239,9 +251,14 @@ ai-movie-player/
 │   │   ├── metadata_service.rs  # TMDB 元数据补全
 │   │   └── subtitle_finder.rs   # 字幕搜索协调
 │   ├── db/
-│   │   ├── schema.rs            # SQLite schema 与迁移
+│   │   ├── connection.rs        # 数据库启动与连接选项
+│   │   ├── migrations.rs        # SQLite schema 迁移
+│   │   ├── models.rs            # 持久化数据模型
 │   │   ├── movies.rs            # Movie CRUD 操作
-│   │   └── settings.rs          # 设置键值存储
+│   │   ├── settings.rs          # 设置键值存储
+│   │   ├── subtitles.rs         # 字幕持久化辅助
+│   │   ├── watchlist.rs         # 片单持久化辅助
+│   │   └── tests.rs             # 数据库相关测试
 │   ├── ui/
 │   │   ├── layout.rs            # 侧边栏导航与视图路由
 │   │   ├── theme.rs             # 颜色系统与主题辅助
@@ -259,13 +276,13 @@ ai-movie-player/
 │   ├── config/
 │   │   └── settings.rs          # AppSettings 模型
 │   ├── thumbnail/
-│   │   └── generator.rs         # 视频缩略图提取
+│   │   └── cache.rs             # 海报与缩略图缓存辅助
 │   └── util/
-│       ├── error.rs             # AppError 类型
-│       └── fs.rs                # 文件系统工具
+│       └── error.rs             # AppError 类型
 ├── .github/
 │   ├── workflows/
-│   │   ├── ci.yml               # CI: fmt, clippy, test, doc, build
+│   │   ├── ci.yml               # CI: fmt, clippy, test, doc, package smoke
+│   │   ├── dependency-review.yml# PR 依赖风险检查
 │   │   ├── release.yml          # Release: 多平台打包 + 校验和
 │   │   ├── labeler.yml          # 按文件路径自动标记 PR
 │   │   └── stale.yml            # 自动关闭过期 issue
@@ -289,10 +306,11 @@ ai-movie-player/
 ## 开发
 
 ```bash
-cargo test
-cargo fmt -- --check
-cargo clippy -- -D warnings
-cargo build --release
+cargo fmt --all -- --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+cargo doc --no-deps --locked
+cargo build --release --locked
 ```
 
 如果当前环境无法访问 crates.io，建议优先使用本地诊断或离线缓存做验证。
@@ -311,10 +329,13 @@ cargo build --release
 
 ## 路线图
 
+- 发布第一个公开 GitHub Release，附带 Windows、macOS、Linux 包和 SHA256 校验和。
+- 给仓库首页和 Release 页面补齐真实截图与短 GIF/视频 demo。
+- 将 API Key 从明文 SQLite 存储迁移到可用平台的系统凭据存储。
+- 探索应用内原生播放控制，同时保留系统播放器调用作为稳定后备路径。
 - 继续把 AI 观影工作流做得更像观影的一部分，而不是看完后才补一句聊天。
 - 提升字幕质量排序和来源可靠性。
 - 进一步优化大体量片库下的海报墙性能与观感。
-- 完善跨平台打包与发布流程。
 - 加强本地 AI 提供方与自托管接口的上手体验。
 
 ## FAQ
@@ -322,6 +343,10 @@ cargo build --release
 ### 这是流媒体应用吗？
 
 不是。AI-Movie-Player 主要围绕本地片库和个人媒体工作流构建。
+
+### 现在内置视频播放器吗？
+
+暂时没有。应用当前会从详情页调用系统默认播放器打开已记录的本地影片文件。等片库、元数据、字幕、发布和安全基础更稳之后，再推进应用内原生播放控制。
 
 ### 不填 AI API Key 也能用吗？
 

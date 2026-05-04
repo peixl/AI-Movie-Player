@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::Arc;
 
 use egui::Color32;
@@ -35,6 +36,7 @@ struct Toast {
 #[derive(Clone, Copy)]
 enum ToastKind {
     Info,
+    Error,
 }
 
 /// Central application state, implements `eframe::App` for the main event loop.
@@ -177,6 +179,34 @@ impl MovieBoxApp {
         self.show_detail = true;
     }
 
+    fn open_local_movie(&mut self, movie: &Movie) {
+        let Some(file_path) =
+            movie.local_file_path.as_deref().filter(|path| !path.trim().is_empty())
+        else {
+            self.push_toast(
+                "No local file path for this movie / 这部电影没有本地文件路径",
+                ToastKind::Error,
+            );
+            return;
+        };
+
+        let path = PathBuf::from(file_path);
+        if !path.exists() {
+            self.push_toast("Movie file not found / 未找到本地影片文件", ToastKind::Error);
+            return;
+        }
+
+        match open_with_system_player(&path) {
+            Ok(()) => {
+                self.push_toast("Opening in system player / 正在调用系统播放器", ToastKind::Info)
+            }
+            Err(err) => self.push_toast(
+                format!("Could not open movie / 无法打开影片: {}", err),
+                ToastKind::Error,
+            ),
+        }
+    }
+
     fn handle_keyboard_shortcuts(&mut self, ctx: &egui::Context) {
         let input = ctx.input(|i| i.clone());
 
@@ -256,6 +286,7 @@ impl MovieBoxApp {
 
             let (bg, icon) = match toast.kind {
                 ToastKind::Info => (crate::ui::theme::surface_light_color(self.is_dark), "ℹ"),
+                ToastKind::Error => (Color32::from_rgb(127, 29, 29), "!"),
             };
 
             egui::Area::new(egui::Id::new(format!("toast_{}", i)))
@@ -396,6 +427,9 @@ impl eframe::App for MovieBoxApp {
                             let detail_action = self.detail_panel.show(ui, &movie, &self.db, self.is_dark);
 
                             match detail_action {
+                                crate::ui::movie_detail::DetailAction::OpenFile => {
+                                    self.open_local_movie(&movie);
+                                }
                                 crate::ui::movie_detail::DetailAction::AiAnalyze => {
                                     self.ai_chat_panel.select_movie(Some(movie.clone()));
                                     self.navigate_to(View::AiChat);
@@ -615,4 +649,34 @@ impl eframe::App for MovieBoxApp {
 
         ctx.request_repaint_after(std::time::Duration::from_millis(500));
     }
+}
+
+fn open_with_system_player(path: &Path) -> std::io::Result<()> {
+    let status = system_open_command(path).status()?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(std::io::Error::other(format!("system open command exited with {}", status)))
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn system_open_command(path: &Path) -> Command {
+    let mut command = Command::new("open");
+    command.arg(path);
+    command
+}
+
+#[cfg(target_os = "windows")]
+fn system_open_command(path: &Path) -> Command {
+    let mut command = Command::new("cmd");
+    command.args(["/C", "start", ""]).arg(path);
+    command
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn system_open_command(path: &Path) -> Command {
+    let mut command = Command::new("xdg-open");
+    command.arg(path);
+    command
 }

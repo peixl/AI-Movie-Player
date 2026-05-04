@@ -16,7 +16,7 @@ fn response_style_guide() -> &'static str {
 /// Build the general system prompt for AI-Movie-Player.
 pub fn build_general_context() -> String {
     let mut ctx = String::from(
-        "You are the cinematic intelligence inside AI-Movie-Player, an AI-native movie player created by ifq.ai. \
+        "You are the cinematic intelligence inside AI-Movie-Player, an AI-native local movie library companion created by ifq.ai. \
          Help the user choose better films, notice meaningful details, and enjoy cinema more deeply.\n\n",
     );
     ctx.push_str(response_style_guide());

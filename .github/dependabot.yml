@@ -6,7 +6,11 @@ updates:
       interval: weekly
       day: monday
       time: "03:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
     commit-message:
       prefix: chore
       include: scope
@@ -20,7 +24,11 @@ updates:
       interval: weekly
       day: monday
       time: "03:30"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     commit-message:
       prefix: chore
       include: scope

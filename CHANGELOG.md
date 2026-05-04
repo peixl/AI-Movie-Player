@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Movie detail action to open a stored local file with the operating system's default player.
+- README status note that clarifies the current playback model and beta maturity.
 - Guided AI viewing workflows for pre-watch briefing, post-watch recap, and double-feature pairing.
 - GitHub issue templates for bugs, feature requests, and AI workflow ideas.
 - GitHub launch kit documentation covering repo description, topics, release copy, social preview direction, and screenshot planning.
@@ -27,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Acknowledgments section in README.
 
 ### Changed
+- Grouped future Dependabot updates to reduce PR churn and keep maintenance signals cleaner.
+- Repositioned public copy around a local movie library companion with system-player launch while embedded playback remains a roadmap item.
+- Clarified that release binaries depend on published GitHub release assets and source builds remain the current fallback.
+- Expanded security notes with a system credential storage roadmap and safer key-handling guidance.
 - Expanded the README with screenshot planning, feature comparison, roadmap, FAQ, and stronger homepage-facing structure.
 - Refined the repository documentation strategy so top-level reader docs are split by language instead of mixed into one file.
 - Improved project structure tree with file descriptions.

@@ -13,6 +13,7 @@ use crate::ui::Rounding;
 #[derive(PartialEq)]
 pub enum DetailAction {
     None,
+    OpenFile,
     SearchSubtitles,
     AiAnalyze,
 }
@@ -41,14 +42,27 @@ impl MovieDetailPanel {
         let primary = crate::ui::theme::primary_color();
 
         egui::ScrollArea::vertical().show(ui, |ui| {
-            // Title + AI Analyze button
+            // Title + primary actions
             ui.horizontal(|ui| {
                 ui.heading(RichText::new(&movie.title).size(22.0).color(text));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let has_local_file = movie
+                        .local_file_path
+                        .as_deref()
+                        .is_some_and(|path| !path.trim().is_empty());
+                    let open_btn = egui::Button::new(
+                        RichText::new("Open / 播放").size(13.0).color(Color32::WHITE),
+                    )
+                    .fill(primary)
+                    .corner_radius(Rounding::same(6.0));
+                    if ui.add_enabled(has_local_file, open_btn).clicked() {
+                        action = DetailAction::OpenFile;
+                    }
+
                     let ai_btn = egui::Button::new(
                         RichText::new("AI Insight / AI 解析").size(13.0).color(Color32::WHITE),
                     )
-                    .fill(primary)
+                    .fill(crate::ui::theme::surface_light_color(is_dark))
                     .corner_radius(Rounding::same(6.0));
                     if ui.add(ai_btn).clicked() {
                         action = DetailAction::AiAnalyze;

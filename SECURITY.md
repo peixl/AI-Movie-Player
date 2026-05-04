@@ -45,6 +45,8 @@ This policy does not cover:
 ## Security Considerations
 
 - API keys are stored locally in the SQLite database. The database file is not encrypted by default.
+- System credential storage is planned for a future 0.2.x/0.3.x release, targeting macOS Keychain, Windows Credential Manager, and Linux Secret Service where available.
+- Until that migration lands, avoid sharing your application data directory and remove saved keys from Settings before publishing logs, database files, screenshots, or support bundles.
 - Network requests are made to TMDB and configured AI endpoints. No telemetry or analytics are collected.
 - The application runs with user-level permissions and does not require elevated access.
 
@@ -79,3 +81,23 @@ This policy does not cover:
 - **确认收到**：48 小时内
 - **初步评估**：5 个工作日内
 - **修复或缓解**：确认的漏洞在 30 天内
+
+### 范围
+
+本政策覆盖：
+- AI-Movie-Player 应用代码
+- 构建与发布基础设施
+- 有安全影响的依赖项
+
+本政策不覆盖：
+- 第三方 AI 提供方 API（OpenAI、Ollama 等）
+- TMDB API 安全
+- 用户本地环境配置
+
+## 安全注意事项
+
+- API Key 当前存储在本地 SQLite 数据库中，数据库默认不加密。
+- 后续 0.2.x/0.3.x 版本计划接入系统凭据存储，在可用平台上优先使用 macOS Keychain、Windows Credential Manager 与 Linux Secret Service。
+- 在该迁移完成前，请避免分享应用数据目录；发布日志、数据库文件、截图或支持包之前，请先在 Settings 中移除保存的密钥。
+- 应用会请求 TMDB 和用户配置的 AI endpoint。项目不收集 telemetry 或 analytics。
+- 应用以普通用户权限运行，不需要提权访问。

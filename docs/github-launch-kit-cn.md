@@ -8,14 +8,14 @@
 
 GitHub About 区域可以优先使用下面两版英文描述之一：
 
-- AI-native movie player for local libraries, cinematic chat, library-aware recommendations, metadata, subtitles, and poster-wall browsing.
-- AI-native desktop movie player with TMDB metadata, subtitle workflow, poster wall, and OpenAI-compatible film intelligence.
+- AI-native local movie library companion with system-player launch, cinematic chat, recommendations, metadata, subtitles, and poster-wall browsing.
+- AI-native local movie library companion with TMDB metadata, subtitle workflow, poster wall, and OpenAI-compatible film intelligence.
 
 ## 推荐 Topics
 
 建议设置这些 topics：
 
-- movie-player
+- movie-library
 - media-player
 - ai
 - rust
@@ -23,7 +23,6 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 - desktop-app
 - tmdb
 - subtitles
-- movie-library
 - recommendation-engine
 - openai-compatible
 - ollama
@@ -39,7 +38,7 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 
 - 使用温暖、克制的深色底，而不是廉价炫光背景。
 - 只放一张干净的主截图，例如海报墙或带选中电影的 AI Companion。
-- 文案保持一行，例如：`AI-native movie player for people who care about cinema.`
+- 文案保持一行，例如：`AI-native local movie library companion for people who care about cinema.`
 - ifq.ai 署名小而安静地放在角落。
 - 不要堆太多功能点、Logo 或视觉噪音。
 
@@ -49,9 +48,9 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 
 建议主文案可选：
 
-- `AI-native movie player for people who care about cinema.`
+- `AI-native local movie library companion for people who care about cinema.`
 - `Local library viewing, with calmer and smarter film intelligence.`
-- `A quieter AI movie player for people who actually watch films.`
+- `A quieter AI movie library companion for people who actually watch films.`
 
 建议副文案可选：
 
@@ -65,7 +64,7 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 1. 一个观感好的海报墙片库截图。
 2. 展示多轮上下文的 AI Companion 对话截图。
 3. AI 推荐页截图。
-4. 电影详情页截图，带元数据和 AI 入口。
+4. 电影详情页截图，带元数据、Open 动作和 AI 入口。
 5. 字幕搜索流程截图。
 
 截图原则：
@@ -117,10 +116,11 @@ GitHub About 区域可以优先使用下面两版英文描述之一：
 ```md
 ## AI-Movie-Player v0.2.1
 
-AI-Movie-Player 是一个面向本地片库的 AI 原生电影播放器，目标是让元数据、字幕、推荐和电影对话都变得自然、优雅、可信。
+AI-Movie-Player 是一个面向本地片库的 AI 原生电影助手，目标是让元数据、字幕、推荐、系统播放器调用和电影对话都变得自然、优雅、可信。
 
 ### 本次亮点
 - 新增 AI 观影工作流：观影前 briefing、观影后复盘、双片连看建议。
+- 电影详情页新增本地文件打开动作，通过系统默认播放器播放。
 - 顶层文档改为英文主文档 + 中文独立配套文档。
 - 改进 GitHub 协作与发布面，加入 Issue 模板和发布说明文档。
 

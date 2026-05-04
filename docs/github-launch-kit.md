@@ -8,14 +8,14 @@ This document is a maintainer-facing kit for polishing the public GitHub present
 
 Use one of these for the GitHub About field:
 
-- AI-native movie player for local libraries, cinematic chat, library-aware recommendations, metadata, subtitles, and poster-wall browsing.
-- AI-native desktop movie player with TMDB metadata, subtitle workflow, poster wall, and OpenAI-compatible film intelligence.
+- AI-native local movie library companion with system-player launch, cinematic chat, recommendations, metadata, subtitles, and poster-wall browsing.
+- AI-native local movie library companion with TMDB metadata, subtitle workflow, poster wall, and OpenAI-compatible film intelligence.
 
 ## Suggested Topics
 
 Recommended repository topics:
 
-- movie-player
+- movie-library
 - media-player
 - ai
 - rust
@@ -23,7 +23,6 @@ Recommended repository topics:
 - desktop-app
 - tmdb
 - subtitles
-- movie-library
 - recommendation-engine
 - openai-compatible
 - ollama
@@ -39,7 +38,7 @@ Recommended composition:
 
 - Use a warm, restrained dark canvas instead of a generic neon AI look.
 - Show one clean hero screenshot: poster wall or AI companion with a selected film.
-- Use one short line only, such as: `AI-native movie player for people who care about cinema.`
+- Use one short line only, such as: `AI-native local movie library companion for people who care about cinema.`
 - Keep the ifq.ai signature small and quiet in one corner.
 - Avoid busy grids, large logos, or feature overload.
 
@@ -49,9 +48,9 @@ Suggested size:
 
 Suggested headline options:
 
-- `AI-native movie player for people who care about cinema.`
+- `AI-native local movie library companion for people who care about cinema.`
 - `Local library viewing, with calmer and smarter film intelligence.`
-- `A quieter AI movie player for people who actually watch films.`
+- `A quieter AI movie library companion for people who actually watch films.`
 
 Suggested supporting line options:
 
@@ -65,7 +64,7 @@ Capture these first:
 1. Poster wall with a tasteful, real-looking library.
 2. AI Companion discussing a single film with multi-turn context visible.
 3. AI Taste Engine recommendation screen.
-4. Movie detail page with metadata, cast, and AI entry point.
+4. Movie detail page with metadata, cast, Open action, and AI entry point.
 5. Subtitle search flow.
 
 Screenshot principles:
@@ -117,10 +116,11 @@ Recommended preview format:
 ```md
 ## AI-Movie-Player v0.2.1
 
-AI-Movie-Player is an AI-native movie player for local libraries, built to make metadata, subtitles, recommendations, and cinematic conversation feel natural and refined.
+AI-Movie-Player is an AI-native local movie library companion, built to make metadata, subtitles, recommendations, system-player launch, and cinematic conversation feel natural and refined.
 
 ### Highlights
 - Added guided AI viewing workflows: pre-watch briefing, post-watch recap, and double-feature pairing.
+- Added local file launch from the movie detail page through the system default player.
 - Split top-level docs into English-first and Chinese companion files.
 - Improved GitHub collaboration surfaces with issue templates and launch documentation.
 
@@ -150,7 +150,7 @@ For the README and repo landing experience, keep the story in this order:
 
 ### Repository Settings
 
-- [ ] Set repository description: `AI-native movie player for local libraries with cinematic chat, library-aware recommendations, metadata, subtitles, and poster-wall browsing.`
+- [ ] Set repository description: `AI-native local movie library companion with system-player launch, cinematic chat, recommendations, metadata, subtitles, and poster-wall browsing.`
 - [ ] Set repository website: `https://ifq.ai`
 - [ ] Add topics (see Suggested Topics above)
 - [ ] Enable Discussions with categories (see Suggested Discussions Categories above)
@@ -170,7 +170,7 @@ For the README and repo landing experience, keep the story in this order:
 Create a 1280x640px image with:
 - Dark, cinematic background
 - One hero screenshot (poster wall or AI companion)
-- Single headline: "AI-native movie player for people who care about cinema."
+- Single headline: "AI-native local movie library companion for people who care about cinema."
 - Small ifq.ai signature in corner
 - No busy grids or feature overload
 

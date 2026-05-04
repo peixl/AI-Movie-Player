@@ -4,12 +4,12 @@ version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["ifq.ai"]
-description = "AI-native movie player / AI 原生电影播放器: cinematic chat, taste-aware recommendations, smart subtitles, metadata, poster wall — by ifq.ai"
+description = "AI-native local movie library companion: system-player launch, cinematic chat, taste-aware recommendations, subtitles, metadata, poster wall — by ifq.ai"
 homepage = "https://ifq.ai"
 repository = "https://github.com/peixl/AI-Movie-Player"
 license = "MIT"
 readme = "README.md"
-keywords = ["movie-player", "ai", "egui", "tmdb", "desktop-app"]
+keywords = ["movie-library", "ai", "egui", "tmdb", "desktop-app"]
 categories = ["multimedia", "gui"]
 
 [dependencies]
