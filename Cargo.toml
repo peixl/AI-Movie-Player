@@ -22,7 +22,7 @@ egui_extras = { version = "0.32", features = ["all_loaders"] }
 tokio = { version = "1", features = ["full"] }
 
 # HTTP
-reqwest = { version = "0.13", features = ["json", "gzip", "brotli", "stream"] }
+reqwest = { version = "0.13", features = ["json", "query", "gzip", "brotli", "stream"] }
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
