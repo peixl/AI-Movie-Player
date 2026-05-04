@@ -16,15 +16,19 @@ AI-Movie-Player 是一个面向本地片库的 AI 原生电影助手，目标是
 ### 本次亮点
 - 新增 AI 观影工作流：观影前 briefing、观影后复盘、双片连看建议。
 - 电影详情页新增本地文件打开动作，通过系统默认播放器播放。
+- 修复中文界面字体渲染问题，跨 Windows、macOS、Linux 加载 CJK 系统字体兜底。
 - AI Companion 从简单 prompt 快捷入口升级为带结构化卡片的专用工作流面板。
 - README、贡献指南、更新日志和发布说明已拆成英文主文档 + 中文配套文档。
 - 新增 GitHub Issue 模板和更完整的开源发布面说明。
+- 新增 GitHub Packages 发布，发布到 `ghcr.io/peixl/ai-movie-player`。
+- 升级分组 Rust 依赖，并修复 reqwest/sha2 兼容变更。
 - 继续清理应用内部更深层的双语状态提示、空状态和系统文案。
 
 ### 平台软件包
-- Windows 软件包：`AI-Movie-Player-v0.2.1-windows-x64.zip`
+这次更新把产品往三个方向推进了一步：结构化 AI 观影工作流、更成熟的中英双语文档，以及更完整的 GitHub 发布面。
 - macOS 软件包：`AI-Movie-Player-v0.2.1-macOS-ARCH.tar.gz`，内含 `AI-Movie-Player.app`
-- Linux 软件包：`AI-Movie-Player-v0.2.1-linux-x64.tar.gz`
+- Linux 软件包：`AI-Movie-Player-v0.2.1-linux-x86_64.tar.gz`
+- GitHub Packages：`ghcr.io/peixl/ai-movie-player:v0.2.1`
 
 ### 升级说明
 - 旧用户会自动保留历史数据与数据库兼容能力。
@@ -57,7 +61,9 @@ Made with care by ifq.ai.
 ### 升级说明
 - 保留旧数据兼容。
 - 新增结构化 AI 工作流卡片与系统播放器调用入口。
+- 修复所有支持桌面平台上的中文界面字体渲染。
 - 改进更深层的中英双语产品文案与发布面。
+- 发布原生 Release 资产和 GHCR 包。
 - 持续支持 OpenAI、Ollama、LM Studio 等 OpenAI-compatible 提供方。
 ```
 
@@ -70,7 +76,7 @@ AI-Movie-Player v0.2.1 已发布。
 
 这次更新把产品往三个方向推进了一步：结构化 AI 观影工作流、更成熟的中英双语文档，以及更完整的 GitHub 发布面。
 
-现在已经加入：观影前 briefing、观影后复盘、双片连看建议、本地影片系统播放器调用入口，以及 Windows + macOS + Linux 三平台打包发布。
+现在已经加入：观影前 briefing、观影后复盘、双片连看建议、本地影片系统播放器调用入口、中文字体渲染修复、Windows + macOS + Linux 三平台打包发布，以及 GHCR 包。
 
 GitHub: https://github.com/peixl/AI-Movie-Player
 by ifq.ai

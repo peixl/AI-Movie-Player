@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-04
+
 ### Added
 - Movie detail action to open a stored local file with the operating system's default player.
 - GitHub Packages publishing workflow for the GHCR package `ghcr.io/peixl/ai-movie-player`.
@@ -41,9 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflow now includes concurrency groups, documentation build, and dependency ordering.
 - Release workflow now produces SHA256 checksums for all artifacts.
 - Cargo.toml now includes full metadata: homepage, repository, license, keywords, categories, authors.
+- Upgraded the grouped Cargo dependency set, including eframe/egui, reqwest, rusqlite, rfd, zip, scraper, toml, and sha2.
 
 ### Fixed
 - Chinese UI labels could render as square glyphs when egui's default fonts lacked CJK coverage.
+- Compatibility fixes for reqwest 0.13 query support and sha2 0.11 digest formatting.
 
 ## [0.2.0] - 2026-05-02
 
@@ -84,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark and light themes.
 - Watchlist, settings, and batch operations.
 
-[Unreleased]: https://github.com/peixl/AI-Movie-Player/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/peixl/AI-Movie-Player/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/peixl/AI-Movie-Player/releases/tag/v0.2.1
 [0.2.0]: https://github.com/peixl/AI-Movie-Player/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/peixl/AI-Movie-Player/releases/tag/v0.1.0

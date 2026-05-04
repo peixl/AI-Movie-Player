@@ -16,15 +16,19 @@ AI-Movie-Player is an AI-native local movie library companion, built to make met
 ### Highlights
 - Added guided AI viewing workflows: pre-watch briefing, post-watch recap, and double-feature pairing.
 - Added local file launch from the movie detail page through the system default player.
+- Fixed Chinese UI rendering by loading cross-platform CJK system font fallbacks.
 - Upgraded AI Companion from prompt shortcuts into structured workflow cards inside a dedicated panel.
 - Split top-level docs into English-first and Chinese companion files for README, contributing, changelog, and release guidance.
 - Added GitHub issue templates and a cleaner launch kit for open-source collaboration.
+- Added GitHub Packages publishing through `ghcr.io/peixl/ai-movie-player`.
+- Upgraded the grouped Rust dependency set and fixed reqwest/sha2 compatibility changes.
 - Improved bilingual wording across deeper in-app states, empty states, and status surfaces.
 
 ### Platform Packages
 - Windows package: `AI-Movie-Player-v0.2.1-windows-x64.zip`
 - macOS package: `AI-Movie-Player-v0.2.1-macOS-ARCH.tar.gz` containing `AI-Movie-Player.app`
-- Linux package: `AI-Movie-Player-v0.2.1-linux-x64.tar.gz`
+- Linux package: `AI-Movie-Player-v0.2.1-linux-x86_64.tar.gz`
+- GitHub Packages: `ghcr.io/peixl/ai-movie-player:v0.2.1`
 
 ### Upgrade Notes
 - Existing users keep legacy app data and database compatibility automatically.
@@ -57,7 +61,9 @@ Use this shorter upgrade block if you need a compact release note section:
 ### Upgrade Notes
 - Keeps legacy app data compatibility.
 - Adds structured AI workflow cards.
+- Fixes Chinese UI font rendering on all supported desktop platforms.
 - Improves bilingual product copy and release surfaces.
+- Publishes native Release assets and a GHCR package.
 - Continues to support OpenAI-compatible providers including OpenAI, Ollama, and LM Studio.
 ```
 
@@ -70,7 +76,7 @@ AI-Movie-Player v0.2.1 is live.
 
 This release deepens the product in three directions: structured AI viewing workflows, cleaner bilingual documentation, and a more polished GitHub launch surface.
 
-Now included: pre-watch briefing, post-watch recap, double-feature pairing, local file launch through the system player, and Windows + macOS + Linux release packaging.
+Now included: pre-watch briefing, post-watch recap, double-feature pairing, local file launch through the system player, CJK font rendering fixes, Windows + macOS + Linux release packaging, and a GHCR package.
 
 GitHub: https://github.com/peixl/AI-Movie-Player
 by ifq.ai

@@ -9,6 +9,8 @@
 
 ## [未发布]
 
+## [0.2.1] - 2026-05-04
+
 ### 新增
 - 电影详情页新增本地文件打开动作，可调用操作系统默认播放器。
 - 新增 GitHub Packages 发布工作流，发布 GHCR 包 `ghcr.io/peixl/ai-movie-player`。
@@ -41,9 +43,11 @@
 - CI 工作流新增并发组、文档构建和依赖排序。
 - Release 工作流为所有产物生成 SHA256 校验和。
 - Cargo.toml 补充完整元数据：homepage、repository、license、keywords、categories、authors。
+- 升级分组 Cargo 依赖，包括 eframe/egui、reqwest、rusqlite、rfd、zip、scraper、toml、sha2 等。
 
 ### 修复
 - 当 egui 默认字体缺少 CJK 覆盖时，中文界面标签会显示为方块字。
+- 修复 reqwest 0.13 query feature 与 sha2 0.11 digest 格式化兼容问题。
 
 ## [0.2.0] - 2026-05-02
 
@@ -84,6 +88,7 @@
 - 深浅色主题。
 - 片单、设置与批量操作。
 
-[未发布]: https://github.com/peixl/AI-Movie-Player/compare/v0.2.0...HEAD
+[未发布]: https://github.com/peixl/AI-Movie-Player/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/peixl/AI-Movie-Player/releases/tag/v0.2.1
 [0.2.0]: https://github.com/peixl/AI-Movie-Player/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/peixl/AI-Movie-Player/releases/tag/v0.1.0
