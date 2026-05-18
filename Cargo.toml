@@ -44,7 +44,7 @@ encoding_rs = "0.8"
 zip = "7"
 
 # HTML scraping
-scraper = "0.26"
+scraper = "0.27"
 
 # Config
 toml = "1.1"
