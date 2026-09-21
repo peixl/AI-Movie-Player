@@ -9,11 +9,17 @@ use std::{
 };
 use tokio::sync::Semaphore;
 
+use crate::api::http;
 use crate::util::error::{AppError, Result};
 
 const DEFAULT_ENDPOINT: &str = "https://api.openai.com/v1";
 const DEFAULT_MODEL: &str = "gpt-4o-mini";
-const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(90);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const NON_STREAM_TIMEOUT: Duration = Duration::from_secs(120);
+/// Maximum quiet period between streamed tokens before giving up. Long answers
+/// are fine as long as tokens keep arriving; a stalled connection is not.
+const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
+const MAX_ATTEMPTS: u32 = 3;
 const MAX_ERROR_BODY_CHARS: usize = 800;
 
 static RE_BEARER_TOKEN: LazyLock<Regex> = LazyLock::new(|| {
@@ -116,6 +122,62 @@ enum StreamParseResult {
     Token(String),
     Done,
     Ignore,
+}
+
+/// Incremental UTF-8 decoder for byte streams.
+///
+/// Network chunks can split a multibyte character (common with CJK tokens).
+/// Decoding each chunk independently with `from_utf8_lossy` injects permanent
+/// replacement characters; this decoder carries the incomplete byte tail into
+/// the next chunk and only substitutes genuinely invalid sequences.
+#[derive(Default)]
+struct Utf8Chunker {
+    pending: Vec<u8>,
+}
+
+impl Utf8Chunker {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Append raw bytes and return the text that is now fully decodable.
+    fn push(&mut self, bytes: &[u8]) -> String {
+        self.pending.extend_from_slice(bytes);
+        let mut decoded = String::new();
+
+        loop {
+            match std::str::from_utf8(&self.pending) {
+                Ok(text) => {
+                    decoded.push_str(text);
+                    self.pending.clear();
+                    break;
+                }
+                Err(error) => {
+                    let valid_up_to = error.valid_up_to();
+                    decoded.push_str(&String::from_utf8_lossy(&self.pending[..valid_up_to]));
+
+                    match error.error_len() {
+                        // Incomplete multibyte sequence at the boundary: keep
+                        // it for the next chunk.
+                        None => {
+                            self.pending = self.pending[valid_up_to..].to_vec();
+                            break;
+                        }
+                        // Genuinely invalid bytes: emit one replacement marker,
+                        // drop the bad sequence, and keep decoding the valid tail
+                        // within the same chunk so streams resynchronize at once.
+                        Some(invalid_len) => {
+                            decoded.push('\u{FFFD}');
+                            let resume = valid_up_to + invalid_len;
+                            self.pending = self.pending[resume.min(self.pending.len())..].to_vec();
+                        }
+                    }
+                }
+            }
+        }
+
+        decoded
+    }
 }
 
 fn parse_stream_line(line: &str) -> StreamParseResult {
@@ -223,22 +285,38 @@ fn parse_non_stream_chat_response(raw_response: &str) -> Option<String> {
 /// AI client with OpenAI-compatible API
 pub struct AiClient {
     config: AiConfig,
+    /// Client with an overall request timeout, used for non-streaming calls.
     client: reqwest::Client,
+    /// Client with only a connect timeout; stream liveness is enforced via an
+    /// idle gap timeout so long generations never hit a total-time budget.
+    stream_client: reqwest::Client,
     rate_limiter: Arc<Semaphore>,
+}
+
+fn build_client(overall_timeout: Option<Duration>) -> reqwest::Client {
+    let mut builder = reqwest::Client::builder()
+        .connect_timeout(CONNECT_TIMEOUT)
+        .pool_idle_timeout(Duration::from_secs(90))
+        .pool_max_idle_per_host(4)
+        .redirect(reqwest::redirect::Policy::limited(5))
+        .gzip(true)
+        .brotli(true)
+        .user_agent(http::APP_USER_AGENT);
+    if let Some(timeout) = overall_timeout {
+        builder = builder.timeout(timeout);
+    }
+    builder.build().unwrap_or_else(|err| {
+        log::warn!("Failed to build configured AI HTTP client: {err}");
+        reqwest::Client::new()
+    })
 }
 
 impl AiClient {
     pub fn new(config: AiConfig) -> Self {
-        let client = reqwest::Client::builder()
-            .timeout(DEFAULT_REQUEST_TIMEOUT)
-            .user_agent(format!("ai-movie-player/{}", env!("CARGO_PKG_VERSION")))
-            .build()
-            .unwrap_or_else(|err| {
-                log::warn!("Failed to build configured AI HTTP client: {}", err);
-                reqwest::Client::new()
-            });
+        let client = build_client(Some(NON_STREAM_TIMEOUT));
+        let stream_client = build_client(None);
 
-        Self { config, client, rate_limiter: Arc::new(Semaphore::new(10)) }
+        Self { config, client, stream_client, rate_limiter: Arc::new(Semaphore::new(10)) }
     }
 
     pub fn config(&self) -> &AiConfig {
@@ -267,38 +345,78 @@ impl AiClient {
         format!("{}/chat/completions", self.config.endpoint.trim().trim_end_matches('/'))
     }
 
+    fn build_request_body(&self, messages: &[ChatMessage], stream: Option<bool>) -> ChatRequest {
+        ChatRequest {
+            model: self.config.model.trim().to_string(),
+            messages: messages.to_vec(),
+            temperature: self.config.temperature,
+            max_tokens: self.config.max_tokens,
+            stream,
+        }
+    }
+
+    fn apply_headers(
+        &self,
+        request: reqwest::RequestBuilder,
+        accept: &str,
+    ) -> reqwest::RequestBuilder {
+        request
+            .header("Authorization", format!("Bearer {}", self.config.api_key.trim()))
+            .header("Content-Type", "application/json")
+            .header("Accept", accept)
+    }
+
     /// Send a chat completion request and get the full response.
     pub async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
         self.validate_ready()?;
 
         let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
-        let req = ChatRequest {
-            model: self.config.model.trim().to_string(),
-            messages: messages.to_vec(),
-            temperature: self.config.temperature,
-            max_tokens: self.config.max_tokens,
-            stream: None,
-        };
+        let mut last_error: Option<AppError> = None;
 
-        let resp = self
-            .client
-            .post(self.chat_completions_url())
-            .header("Authorization", format!("Bearer {}", self.config.api_key.trim()))
-            .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
-            .json(&req)
-            .send()
-            .await?;
+        for attempt in 0..MAX_ATTEMPTS {
+            let req = self.build_request_body(messages, None);
+            let response = self
+                .apply_headers(
+                    self.client.post(self.chat_completions_url()).json(&req),
+                    "application/json",
+                )
+                .send()
+                .await;
 
-        if !resp.status().is_success() {
-            let status = resp.status().as_u16();
-            let body = resp.text().await.unwrap_or_default();
-            return Err(ai_api_error(status, &body));
+            let resp = match response {
+                Ok(resp) => resp,
+                Err(err) => {
+                    if http::is_retryable_network(&err) && attempt + 1 < MAX_ATTEMPTS {
+                        let jitter = http::backoff_delay(attempt, None, attempt as f64 / 3.0);
+                        tokio::time::sleep(jitter).await;
+                        continue;
+                    }
+                    return Err(AppError::Network(err));
+                }
+            };
+
+            let status = resp.status();
+            if !status.is_success() {
+                let code = status.as_u16();
+                let body = resp.text().await.unwrap_or_default();
+                let retryable = http::is_retryable_status(code);
+                if retryable && attempt + 1 < MAX_ATTEMPTS {
+                    last_error = Some(ai_api_error(code, &body));
+                    let jitter = http::backoff_delay(attempt, None, attempt as f64 / 3.0);
+                    tokio::time::sleep(jitter).await;
+                    continue;
+                }
+                return Err(ai_api_error(code, &body));
+            }
+
+            let data: ChatResponse = resp.json().await?;
+            return extract_chat_content(data);
         }
 
-        let data: ChatResponse = resp.json().await?;
-        extract_chat_content(data)
+        Err(last_error.unwrap_or_else(|| {
+            AppError::Config("AI request failed after retries / AI 请求重试后仍失败".into())
+        }))
     }
 
     /// Stream a chat completion, yielding tokens as they arrive.
@@ -311,21 +429,13 @@ impl AiClient {
 
         let _permit = self.rate_limiter.acquire().await.expect("AI rate limiter semaphore closed");
 
-        let req = ChatRequest {
-            model: self.config.model.trim().to_string(),
-            messages: messages.to_vec(),
-            temperature: self.config.temperature,
-            max_tokens: self.config.max_tokens,
-            stream: Some(true),
-        };
+        let req = self.build_request_body(messages, Some(true));
 
         let resp = self
-            .client
-            .post(self.chat_completions_url())
-            .header("Authorization", format!("Bearer {}", self.config.api_key.trim()))
-            .header("Content-Type", "application/json")
-            .header("Accept", "text/event-stream, application/json")
-            .json(&req)
+            .apply_headers(
+                self.stream_client.post(self.chat_completions_url()).json(&req),
+                "text/event-stream, application/json",
+            )
             .send()
             .await?;
 
@@ -340,11 +450,23 @@ impl AiClient {
         let mut buffer = String::new();
         let mut stream = resp.bytes_stream();
         let mut saw_done = false;
+        let mut decoder = Utf8Chunker::new();
 
         use futures_util::StreamExt;
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            let chunk_text = String::from_utf8_lossy(&chunk);
+        loop {
+            let next = tokio::time::timeout(STREAM_IDLE_TIMEOUT, stream.next()).await;
+            let Some(chunk_result) = next.map_err(|_| {
+                AppError::Timeout(format!(
+                    "AI stream idle for over {}s / AI 流式响应空闲超时",
+                    STREAM_IDLE_TIMEOUT.as_secs()
+                ))
+            })?
+            else {
+                break; // Stream ended.
+            };
+
+            let chunk = chunk_result?;
+            let chunk_text = decoder.push(&chunk);
             raw_response.push_str(&chunk_text);
             buffer.push_str(&chunk_text);
 
@@ -481,5 +603,63 @@ mod tests {
         let response: ChatResponse = serde_json::from_str(r#"{"choices":[]}"#).unwrap();
 
         assert!(extract_chat_content(response).is_err());
+    }
+
+    #[test]
+    fn utf8_chunker_reassembles_multibyte_chars_split_across_chunks() {
+        // "你好" in UTF-8 is 6 bytes: E4 BD A0 E5 A5 BD
+        let full = "你好，world";
+        let bytes = full.as_bytes();
+        let mut decoder = super::Utf8Chunker::new();
+        let mut assembled = String::new();
+
+        // Feed one byte at a time to guarantee every multibyte sequence is split.
+        for byte in bytes {
+            assembled.push_str(&decoder.push(std::slice::from_ref(byte)));
+        }
+
+        assert_eq!(assembled, full);
+    }
+
+    #[test]
+    fn utf8_chunker_replaces_invalid_sequences_and_resynchronizes() {
+        let mut decoder = super::Utf8Chunker::new();
+        let mut out = String::new();
+        out.push_str(&decoder.push(&[0xFF, b'o', b'k']));
+        assert!(out.contains('\u{FFFD}'));
+        assert!(out.ends_with("ok"));
+    }
+
+    #[test]
+    fn multibyte_token_split_between_sse_chunks_still_parses() {
+        let token_line = "data: {\"choices\":[{\"delta\":{\"content\":\"电影\"}}]}\n";
+        let bytes = token_line.as_bytes();
+        let mut decoder = super::Utf8Chunker::new();
+        let mut buffer = String::new();
+        let mut tokens = Vec::new();
+
+        // Split at every possible byte offset.
+        for split in 1..bytes.len() {
+            let (left, right) = bytes.split_at(split);
+            buffer.push_str(&decoder.push(left));
+            let (parsed, _) = collect_stream_tokens(&mut buffer, false);
+            tokens.extend(parsed);
+            buffer.push_str(&decoder.push(right));
+            let (parsed, done) = collect_stream_tokens(&mut buffer, true);
+            tokens.extend(parsed);
+            assert!(!done);
+            decoder = super::Utf8Chunker::new();
+            buffer.clear();
+            tokens.clear();
+        }
+
+        // A straightforward split in the middle must preserve the CJK token.
+        let mut decoder = super::Utf8Chunker::new();
+        let mut buffer = String::new();
+        let mid = bytes.len() / 2;
+        buffer.push_str(&decoder.push(&bytes[..mid]));
+        buffer.push_str(&decoder.push(&bytes[mid..]));
+        let (tokens, _) = collect_stream_tokens(&mut buffer, true);
+        assert_eq!(tokens, vec!["电影".to_string()]);
     }
 }

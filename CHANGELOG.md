@@ -10,13 +10,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Shared resilient HTTP layer (`src/api/http.rs`) with per-profile timeouts (API/image/download), connection pooling, gzip/brotli, redirect limits, a branded user agent, exponential backoff with jitter and `Retry-After` support, and retryable-status/network classification.
+- Fuzzy TMDB matcher (`src/core/matcher.rs`) combining normalized title similarity (token Dice, containment, Damerau–Levenshtein), year distance, and a popularity tiebreaker, with explicit confidence thresholds so wrong first-result matches are rejected.
+- Honest fallback import: files that cannot be matched to TMDB are still added as minimal records instead of being silently dropped.
+- Content-hash duplicate detection (head/tail file hash) in addition to path-based dedup, with bounded-concurrency batch import (6 workers) and a live progress report (imported / skipped / unmatched / failed).
+- Sample, trailer, extras, featurette, interview, deleted-scene, and hidden-directory filtering during folder scans, plus a bounded scan depth and additional video extensions.
+- OpenSubtitles official REST API (`api.opensubtitles.com/api/v1`) integration with API-key configuration, tmdb/imdb/query search, BCP-47 language mapping, quality ranking (language preference, rating, downloads, HD; AI-translated/HI deprioritized), and per-file download.
+- Subtitle archive safety: zip-slip path traversal protection, best-entry selection (srt > ass > vtt …), UTF-8/UTF-16 BOM and GBK decoding, and smart same-basename installation next to the movie for player auto-loading.
+- Detached cross-platform playback (`src/core/playback.rs`): "play with default player" and "reveal in file manager" never block the UI, with Linux `xdg-open`/`gio` fallback.
+- Movie detail actions to reveal a file in its folder and relocate a missing file; the UI now warns when the stored file is gone and disables playback.
+- Working import wizard with live progress bar, per-file status, and a completion summary; folder pickers open once per request instead of looping after cancel.
+- Working subtitle panel: search results (language, source, rating, downloads, HD/AI/HI badges), inline downloads with re-entry protection, and a settings shortcut when no API key is configured.
+- Async poster loading: wall decoding runs on background threads with an LRU texture cache and skeleton placeholders; detail posters use the egui image loader; thumbnail writes are atomic (temp + rename).
+- Adaptive repaint scheduling (fast while work is in flight, idle otherwise), Ctrl+F/Cmd+F search focus, a real 256px procedural app icon, and SQLite `busy_timeout`/WAL-friendly pragmas.
 - Quick demo path in README to show the import, metadata, movie detail, AI briefing, and double-feature flow.
 - AI grounding examples that explain which movie and library context each AI workflow should use.
 - Starter issue pack for `good first issue` and `help wanted` roadmap tasks.
 
 ### Changed
+- TMDB client uses separate HTTP clients and rate limiters for API calls vs image CDN traffic, fetches primary-language and zh-CN details concurrently, and validates poster responses (content type, empty body).
+- AI streaming uses a connect-only timeout plus a per-chunk idle timeout, so long generations are no longer killed by a fixed total timeout; non-streaming chat retries with backoff.
+- SSE stream decoding uses an incremental UTF-8 decoder instead of per-chunk `from_utf8_lossy`, eliminating spurious replacement characters when multibyte tokens are split across chunks.
+- TMDB client is shared via `Arc<TmdbClient>` instead of a global mutex that serialized all requests.
+- Settings changes rebuild network clients in place; subtitle downloads record rows through an isolated database connection.
 - Updated launch documentation to treat screenshots, demo media, and visible starter issues as the remaining community-readiness gaps after v0.2.1.
 - Clarified README release wording now that native v0.2.1 assets and checksums are available.
+
+### Fixed
+- Import wizard never completed: TMDB search results and subtitle search results spawned in background tasks were discarded, leaving the wizard stuck on the searching state.
+- Short or missing release dates could panic the TMDB parser (`&date[..4]`); date parsing is now bounds-safe.
+- Folder dialog could re-open every frame after being cancelled.
+- Poster image decoding on the UI thread could stutter large libraries; it is now off-thread.
+- Removed per-view-switch toast noise and the permanent 500 ms repaint wakeup.
+
+### Security
+- Fixed a zip-slip vulnerability in subtitle archive extraction that allowed path traversal via crafted member names.
+- Subtitle downloads require a user-configured OpenSubtitles API key; no third-party key is bundled, and provider error bodies are redacted/truncated before display.
 
 ## [0.2.1] - 2026-05-04
 

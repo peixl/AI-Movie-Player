@@ -15,7 +15,12 @@ pub fn open_database(app_data_dir: &Path) -> rusqlite::Result<Connection> {
     let db_path = if legacy_path.exists() { legacy_path } else { preferred_path };
     let conn = Connection::open(&db_path)?;
 
-    conn.execute_batch("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;")?;
+    conn.execute_batch(
+        "PRAGMA journal_mode = WAL;
+         PRAGMA foreign_keys = ON;
+         PRAGMA busy_timeout = 5000;
+         PRAGMA synchronous = NORMAL;",
+    )?;
 
     run_migrations(&conn)?;
 

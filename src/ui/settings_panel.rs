@@ -17,6 +17,7 @@ pub struct SettingsPanel {
     pub ai_api_key: String,
     pub ai_model: String,
     pub ai_temperature: f32,
+    pub opensubtitles_key: String,
 }
 
 impl SettingsPanel {
@@ -33,6 +34,7 @@ impl SettingsPanel {
             ai_api_key: settings.ai_api_key,
             ai_model: settings.ai_model,
             ai_temperature: settings.ai_temperature,
+            opensubtitles_key: settings.opensubtitles_api_key,
         }
     }
 
@@ -166,6 +168,25 @@ impl SettingsPanel {
             }
         });
 
+        // ---- Subtitles ----
+        ui.add_space(12.0);
+        ui.separator();
+        ui.add_space(8.0);
+        ui.label(RichText::new("字幕 / Subtitles (OpenSubtitles)").size(14.0).strong().color(text));
+        ui.label(
+            RichText::new("免费 API Key 申请 / Get a free consumer API key at https://www.opensubtitles.com/api/keys")
+                .size(11.0)
+                .color(dim)
+                .monospace(),
+        );
+        let os_key_changed = ui.add(
+            egui::TextEdit::singleline(&mut self.opensubtitles_key)
+                .hint_text("OpenSubtitles API Key...")
+                .password(true)
+                .desired_width(f32::INFINITY),
+        ).changed();
+        if os_key_changed { self.saved = false; }
+
         // Theme
         ui.add_space(12.0);
         ui.separator();
@@ -202,6 +223,7 @@ impl SettingsPanel {
         db_settings::set_setting(db, "ai_api_key", &self.ai_api_key).ok();
         db_settings::set_setting(db, "ai_model", &self.ai_model).ok();
         db_settings::set_setting(db, "ai_temperature", &self.ai_temperature.to_string()).ok();
+        db_settings::set_setting(db, "opensubtitles_api_key", &self.opensubtitles_key).ok();
         self.saved = true;
     }
 }

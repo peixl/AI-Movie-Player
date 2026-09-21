@@ -27,7 +27,7 @@ AI Movie Player 目前是 beta 阶段的本地片库应用，而不是已经内�
 | 层级 | 技术 |
 | --- | --- |
 | 语言 | Rust (edition 2024, MSRV 1.85) |
-| GUI 框架 | [egui](https://github.com/emilk/egui) / eframe 0.31 |
+| GUI 框架 | [egui](https://github.com/emilk/egui) / eframe 0.32 |
 | 异步运行时 | [Tokio](https://tokio.rs) |
 | 数据库 | [SQLite](https://sqlite.org) via rusqlite (WAL 模式, FTS5) |
 | HTTP 客户端 | [reqwest](https://github.com/seanmonstar/reqwest) (gzip, brotli, stream) |
@@ -166,12 +166,12 @@ AI 功能会尽量使用应用已经掌握的影片和片库上下文，而不�
 
 | 模块 | 说明 |
 | --- | --- |
-| 片库 | 扫描文件夹、识别影片文件、避免重复导入，管理个人收藏。 |
-| 播放调用 | 从电影详情页用系统默认播放器打开已记录的本地影片文件。 |
-| 元数据 | 通过 TMDB 补全标题、海报、演员、评分与简介。 |
-| AI | 提供电影对话、AI 解析、观影画像和推荐流程。 |
-| 字幕 | 从多个来源搜索并下载适合本地媒体的字幕。 |
-| 海报墙 | 用更直观的视觉方式浏览收藏。 |
+| 片库 | 递归扫描并跳过样片/预告/花絮，有界并发导入，路径 + 内容哈希双重去重，带置信阈值的模糊 TMDB 匹配，无法匹配的文件以诚实兜底记录入库。 |
+| 播放调用 | 完全分离地调用系统默认播放器（绝不阻塞界面），支持"在文件夹中显示"，文件移动后可一键重新定位。 |
+| 元数据 | 通过带超时与重试的韧性 HTTP 客户端，并发获取双语详情，补全 TMDB 标题、海报、演员、评分与简介。 |
+| AI | 提供电影对话、AI 解析、观影画像和推荐流程；流式回答采用空闲超时，长回答不会被总时长误杀。 |
+| 字幕 | 接入 OpenSubtitles 官方 API，按语言偏好与质量信号排序，安全解压（防 zip-slip）、编码归一化，并以影片同名规则安装到影片旁自动挂载。 |
+| 海报墙 | 海报解码移出 UI 线程、LRU 纹理缓存，浏览更大片库依然顺滑。 |
 | 片单 | 管理接下来准备看的影片。 |
 
 ## 与普通播放器相比
@@ -183,7 +183,10 @@ AI 功能会尽量使用应用已经掌握的影片和片库上下文，而不�
 | 围绕单部电影的 AI 对话 | 少见 | 原生工作流 |
 | 基于片库的推荐 | 少见 | 内建 |
 | 观影工作流 | 基本没有 | 观影前、观影后、双片连看 |
-| 字幕工作流 | 基础能力 | 更偏向搜索与下载闭环 |
+| 字幕工作流 | 基础能力 | OpenSubtitles 排序搜索、防 zip-slip 解压、GBK/BOM 处理、自动挂载命名 |
+| 导入健壮性 | 手工整理或盲取第一条 | 模糊评分匹配、内容哈希去重、样片/预告过滤、未匹配诚实入库 |
+| 网络行为 | 单一尽力而为客户端 | 分档超时、退避重试、API/图片独立限速、流式空闲超时 |
+| 文件丢失 | 静默失败 | 显式警告、一键重新定位、在文件夹中显示 |
 | 产品气质 | 工具导向 | 电影导向，安静高级 |
 
 ## 视觉预览
@@ -209,6 +212,7 @@ GitHub Packages 会随发布标签同步发布 OCI 包：`ghcr.io/peixl/ai-movie
 
 - Rust 1.85+
 - 一个来自 [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api) 的 TMDB API Key
+- 可选：在 [opensubtitles.com/api/keys](https://www.opensubtitles.com/api/keys) 免费申请的 OpenSubtitles API Key，用于字幕下载
 - 可选：任意 OpenAI-compatible API Key
 
 ### 克隆并运行
@@ -231,7 +235,7 @@ cargo run --release
 6. 在 AI Companion 中请求一份不剧透的观影前 briefing。
 7. 再试一次双片连看建议，观察应用如何把单部电影扩展成观影路径。
 
-即使不配置 AI Key，本地片库、元数据、海报、片单、字幕和系统播放器调用流程仍然可以使用。
+即使不配置 AI Key，本地片库、元数据、海报、片单和系统播放器调用流程仍然可以使用；字幕下载需要单独配置免费的 OpenSubtitles API Key。
 
 ## AI 配置
 
@@ -247,6 +251,15 @@ OpenAI    -> https://api.openai.com/v1
 Ollama    -> http://localhost:11434/v1
 LM Studio -> http://localhost:1234/v1
 ```
+
+## 字幕配置
+
+1. 在 [opensubtitles.com](https://www.opensubtitles.com) 免费注册账号，并在 [opensubtitles.com/api/keys](https://www.opensubtitles.com/api/keys) 创建 API Key。
+2. 打开 Settings（设置）→ 字幕区域，粘贴 API Key 并保存。
+3. 在影片的字幕视图中，按语言、评分、HD 徽章挑选结果并下载。
+4. 字幕会以 `{影片名}.{语言}.{扩展名}` 安装到影片同目录，IINA、VLC、MPC-HC 等播放器可自动挂载；若影片文件缺失，则下载到临时目录。
+
+应用不会内置任何第三方 API Key。
 
 ## 快捷键
 
@@ -272,14 +285,17 @@ ai-movie-player/
 │   ├── app.rs                   # 应用核心结构体 (eframe::App)
 │   ├── ai/                      # AI 提示词构建与工作流逻辑
 │   ├── api/
+│   │   ├── http.rs              # 共享超时、重试、退避与 User-Agent
 │   │   ├── ai.rs                # OpenAI 兼容流式客户端
 │   │   └── tmdb.rs              # TMDB API v3 客户端
 │   ├── core/
 │   │   ├── filename_parser.rs   # 从文件名提取元数据
+│   │   ├── matcher.rs           # 模糊评分 TMDB 匹配器
+│   │   ├── playback.rs          # 分离式系统播放器/文件管理器调用
 │   │   ├── file_organizer.rs    # 文件整理与重命名
-│   │   ├── library_manager.rs   # 片库扫描与导入
+│   │   ├── library_manager.rs   # 并发片库扫描与导入
 │   │   ├── metadata_service.rs  # TMDB 元数据补全
-│   │   └── subtitle_finder.rs   # 字幕搜索协调
+│   │   └── subtitle_finder.rs   # OpenSubtitles 搜索、下载与解压
 │   ├── db/
 │   │   ├── connection.rs        # 数据库启动与连接选项
 │   │   ├── migrations.rs        # SQLite schema 迁移
@@ -381,8 +397,8 @@ cargo test --test ai_live -- --ignored --nocapture
 - 将 API Key 从明文 SQLite 存储迁移到可用平台的系统凭据存储。
 - 探索应用内原生播放控制，同时保留系统播放器调用作为稳定后备路径。
 - 继续把 AI 观影工作流做得更像观影的一部分，而不是看完后才补一句聊天。
-- 提升字幕质量排序和来源可靠性。
-- 进一步优化大体量片库下的海报墙性能与观感。
+- 在 OpenSubtitles API 之外增加更多字幕来源与更丰富的格式处理。
+- 为数万部级别的片库进一步引入海报墙虚拟化。
 - 加强本地 AI 提供方与自托管接口的上手体验。
 
 ## FAQ
@@ -397,7 +413,11 @@ cargo test --test ai_live -- --ignored --nocapture
 
 ### 不填 AI API Key 也能用吗？
 
-可以。片库、海报、元数据和字幕等流程仍然可以使用；AI 功能才需要 OpenAI-compatible 提供方。
+可以。片库、海报和元数据流程无需 AI 即可使用；AI 功能才需要 OpenAI-compatible 提供方。字幕下载则独立需要一个免费的 OpenSubtitles API Key（见"字幕配置"）。
+
+### 影片文件丢失或被移动了怎么办？
+
+详情页会明确警告并禁用播放。可以用"重新定位文件"指向新位置（元数据与字幕记录保留），或用"在文件夹中显示"查看期望路径。
 
 ### 选哪个 AI 提供方比较好？
 

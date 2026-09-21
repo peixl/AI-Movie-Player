@@ -161,6 +161,33 @@ pub fn movie_exists_by_path(conn: &Connection, path: &str) -> Result<bool> {
     Ok(count > 0)
 }
 
+/// Detect a previously imported copy using its head/tail content hash. Catches
+/// files that were moved or renamed after import.
+pub fn movie_exists_by_file_hash(conn: &Connection, file_hash: &str) -> Result<bool> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM movies WHERE file_hash = ?1 AND file_hash IS NOT NULL",
+        params![file_hash],
+        |row| row.get(0),
+    )?;
+    Ok(count > 0)
+}
+
+/// Repoint a movie record after the user locates a moved file.
+pub fn update_movie_file(
+    conn: &Connection,
+    id: i64,
+    path: &str,
+    file_size: Option<i64>,
+    file_hash: Option<String>,
+) -> Result<()> {
+    conn.execute(
+        "UPDATE movies SET local_file_path = ?1, file_size = ?2, file_hash = ?3,
+         updated_date = datetime('now') WHERE id = ?4",
+        params![path, file_size, file_hash, id],
+    )?;
+    Ok(())
+}
+
 fn movie_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Movie> {
     Ok(Movie {
         id: row.get(0)?,

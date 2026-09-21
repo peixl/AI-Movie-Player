@@ -19,6 +19,8 @@ pub struct AppSettings {
     pub ai_api_key: String,
     pub ai_model: String,
     pub ai_temperature: f32,
+    /// OpenSubtitles (api.opensubtitles.com) consumer key for subtitle search.
+    pub opensubtitles_api_key: String,
 }
 
 impl Default for AppSettings {
@@ -35,6 +37,7 @@ impl Default for AppSettings {
             ai_api_key: String::new(),
             ai_model: "gpt-4o-mini".into(),
             ai_temperature: 0.7,
+            opensubtitles_api_key: String::new(),
         }
     }
 }
@@ -85,6 +88,9 @@ impl AppSettings {
             if let Ok(t) = v.parse::<f32>() {
                 settings.ai_temperature = t;
             }
+        }
+        if let Ok(Some(v)) = get_setting("opensubtitles_api_key") {
+            settings.opensubtitles_api_key = v;
         }
 
         settings

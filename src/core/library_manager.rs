@@ -1,114 +1,220 @@
 //! Library scanning, import, and duplicate detection.
+//!
+//! The import pipeline is designed for large personal libraries:
+//! - recursive walks skip hidden/metadata directories and non-feature files
+//!   (samples, trailers, extras);
+//! - content-hash dedup catches moved and renamed copies;
+//! - TMDB enrichment runs with bounded concurrency;
+//! - files that cannot be matched are still imported as honest minimal
+//!   records instead of being silently dropped;
+//! - progress is shared via a mutex so the UI can poll it without channels.
+
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use rusqlite::Connection;
-use std::path::{Path, PathBuf};
+use tokio::task::JoinSet;
 
 use crate::api::tmdb::TmdbClient;
 use crate::core::{filename_parser, metadata_service::MetadataService};
 use crate::db::{models::Movie, movies};
 use crate::util::error::Result;
 
+/// Maximum number of files enriched against TMDB concurrently.
+const IMPORT_CONCURRENCY: usize = 6;
+const MAX_SCAN_DEPTH: usize = 5;
+
+/// Tokens (folder or file names) that identify non-feature content.
+const NON_FEATURE_TOKENS: &[&str] = &[
+    "sample",
+    "samples",
+    "trailer",
+    "trailers",
+    "extras",
+    "extra",
+    "behindthescenes",
+    "featurette",
+    "interview",
+    "interviews",
+    "deleted",
+    "deletedscenes",
+    "short",
+    "shorts",
+    "advertisement",
+    "advertisements",
+    "etrg",
+];
+
 /// Stateless library management operations.
 pub struct LibraryManager;
 
 /// Progress tracking for library scan operations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ScanProgress {
     pub total: usize,
     pub processed: usize,
     pub imported: usize,
     pub skipped: usize,
     pub failed: usize,
+    pub unmatched: usize,
     pub current_file: Option<String>,
 }
 
+/// A file that could not be imported, with a human-readable reason.
+#[derive(Debug, Clone)]
+pub struct ImportFailure {
+    pub file: String,
+    pub reason: String,
+}
+
+/// Outcome of a batch import.
+#[derive(Debug, Default)]
+pub struct ImportReport {
+    pub imported: Vec<Movie>,
+    pub skipped: usize,
+    pub unmatched: usize,
+    pub failed: Vec<ImportFailure>,
+}
+
+impl ImportReport {
+    pub fn total_imported(&self) -> usize {
+        self.imported.len()
+    }
+}
+
+/// Whether a path component denotes non-feature content (samples, extras...).
+pub fn is_non_feature_path(path: &Path, scan_root: &Path) -> bool {
+    let relative = path.strip_prefix(scan_root).unwrap_or(path);
+
+    relative.components().filter_map(|c| c.as_os_str().to_str()).any(|raw| {
+        // Hidden file/directory (NAS metadata, trash, thumbs).
+        if raw.starts_with('.') && raw != "." && raw != ".." {
+            return true;
+        }
+
+        let normalized: String = raw
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c.to_ascii_lowercase() } else { ' ' })
+            .collect();
+        normalized.split_whitespace().any(|token| NON_FEATURE_TOKENS.contains(&token))
+    })
+}
+
 impl LibraryManager {
-    pub fn scan_folder(path: &std::path::Path) -> Vec<PathBuf> {
+    /// Recursively collect feature video files under `path`.
+    pub fn scan_folder(path: &Path) -> Vec<PathBuf> {
         let mut files = Vec::new();
         let walker = walkdir::WalkDir::new(path)
             .follow_links(false)
-            .max_depth(5)
+            .max_depth(MAX_SCAN_DEPTH)
             .into_iter()
             .filter_map(|e| e.ok());
 
         for entry in walker {
-            if entry.file_type().is_file() {
-                let name = entry.file_name().to_string_lossy();
-                if filename_parser::is_video_file(&name) {
-                    files.push(entry.path().to_path_buf());
-                }
+            if !entry.file_type().is_file() {
+                continue;
             }
+            let name = entry.file_name().to_string_lossy();
+            if !filename_parser::is_video_file(&name) {
+                continue;
+            }
+            if is_non_feature_path(entry.path(), path) {
+                continue;
+            }
+            files.push(entry.path().to_path_buf());
         }
         files
     }
 
+    /// Import files with bounded-concurrency TMDB enrichment.
+    ///
+    /// Worker tasks perform only `Send`-safe work (hashing, network, poster
+    /// download); the single SQLite connection stays on this task and records
+    /// are inserted as workers finish.
     pub async fn batch_scan_and_import(
-        client: &TmdbClient,
+        client: Arc<TmdbClient>,
         db: &Connection,
-        files: &[PathBuf],
-        thumbnail_dir: &Path,
-        auto_confirm: bool,
-        progress_callback: impl Fn(ScanProgress),
-    ) -> Result<Vec<Movie>> {
-        let total = files.len();
-        let mut imported = Vec::new();
-        let mut scan_progress = ScanProgress {
-            total,
-            processed: 0,
-            imported: 0,
-            skipped: 0,
-            failed: 0,
-            current_file: None,
-        };
-
-        for file in files {
-            scan_progress.processed += 1;
-            scan_progress.current_file =
-                Some(file.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default());
-
-            // Skip already imported
-            let file_path_str = file.to_string_lossy().to_string();
-            if movies::movie_exists_by_path(db, &file_path_str).unwrap_or(false) {
-                scan_progress.skipped += 1;
-                progress_callback(scan_progress.clone());
-                continue;
-            }
-
-            match MetadataService::search_and_match(client, file).await {
-                Ok((_search_result, details)) => {
-                    // In auto_confirm mode, import directly
-                    // In manual mode, we'd show the match to the user
-                    if auto_confirm {
-                        match MetadataService::import_movie(
-                            client,
-                            file,
-                            &details,
-                            db,
-                            thumbnail_dir,
-                        )
-                        .await
-                        {
-                            Ok(movie) => {
-                                imported.push(movie);
-                                scan_progress.imported += 1;
-                            }
-                            Err(e) => {
-                                log::warn!("Failed to import {}: {}", file.display(), e);
-                                scan_progress.failed += 1;
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    log::warn!("Search failed for {}: {}", file.display(), e);
-                    scan_progress.failed += 1;
-                }
-            }
-
-            progress_callback(scan_progress.clone());
+        files: Vec<PathBuf>,
+        thumbnail_dir: PathBuf,
+        progress: Arc<Mutex<ScanProgress>>,
+    ) -> Result<ImportReport> {
+        {
+            let mut p = progress.lock().expect("progress mutex");
+            p.total = files.len();
         }
 
-        Ok(imported)
+        let mut report = ImportReport::default();
+        let mut tasks: JoinSet<(PathBuf, PreparedFile)> = JoinSet::new();
+        let mut queued = files.into_iter();
+        let mut in_flight = 0usize;
+
+        loop {
+            while in_flight < IMPORT_CONCURRENCY {
+                if let Some(file) = queued.next() {
+                    // Cheap sequential path dedup before spending network work.
+                    let already =
+                        movies::movie_exists_by_path(db, &file.to_string_lossy()).unwrap_or(false);
+                    if already {
+                        let mut p = progress.lock().expect("progress mutex");
+                        p.skipped += 1;
+                        report.skipped += 1;
+                        continue;
+                    }
+
+                    let client = client.clone();
+                    let thumbnail_dir = thumbnail_dir.clone();
+                    tasks.spawn(async move {
+                        let prepared = prepare_file(&client, &file, &thumbnail_dir).await;
+                        (file, prepared)
+                    });
+                    in_flight += 1;
+                } else {
+                    break;
+                }
+            }
+
+            let Some(joined) = tasks.join_next().await else { break };
+            in_flight -= 1;
+            let (file, prepared) = match joined {
+                Ok(pair) => pair,
+                Err(err) => {
+                    log::error!("Import task panicked: {err}");
+                    continue;
+                }
+            };
+
+            let file_name = file
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| file.to_string_lossy().to_string());
+
+            let mut p = progress.lock().expect("progress mutex");
+            p.processed += 1;
+            p.current_file = Some(file_name.clone());
+
+            let outcome = persist_prepared(db, prepared);
+            match outcome {
+                FileOutcome::Imported(movie, matched) => {
+                    p.imported += 1;
+                    if !matched {
+                        p.unmatched += 1;
+                        report.unmatched += 1;
+                    }
+                    report.imported.push(*movie);
+                }
+                FileOutcome::Skipped => {
+                    p.skipped += 1;
+                    report.skipped += 1;
+                }
+                FileOutcome::Failed(reason) => {
+                    p.failed += 1;
+                    log::warn!("Failed to import {}: {}", file.display(), reason);
+                    report.failed.push(ImportFailure { file: file_name, reason });
+                }
+            }
+        }
+
+        Ok(report)
     }
 
     pub fn get_library_stats(db: &Connection) -> Result<LibraryStats> {
@@ -127,6 +233,64 @@ impl LibraryManager {
     }
 }
 
+enum FileOutcome {
+    Imported(Box<Movie>, bool),
+    Skipped,
+    Failed(String),
+}
+
+/// Worker-side result: everything network/disk bound, no database access.
+enum PreparedFile {
+    Matched { movie: Movie },
+    Unmatched { movie: Movie },
+    Failed(String),
+}
+
+async fn prepare_file(client: &TmdbClient, file: &Path, thumbnail_dir: &Path) -> PreparedFile {
+    match MetadataService::search_and_match(client, file).await {
+        Ok((_search_result, details)) => {
+            match MetadataService::prepare_matched_movie(client, file, &details, thumbnail_dir)
+                .await
+            {
+                Ok(movie) => PreparedFile::Matched { movie },
+                Err(err) => PreparedFile::Failed(err.to_string()),
+            }
+        }
+        Err(crate::util::error::AppError::MovieNotFound { .. }) => {
+            match MetadataService::build_unmatched_movie(file) {
+                Ok(movie) => PreparedFile::Unmatched { movie },
+                Err(err) => PreparedFile::Failed(err.to_string()),
+            }
+        }
+        Err(err) => PreparedFile::Failed(err.to_string()),
+    }
+}
+
+/// Sequential database persistence for a prepared file. Runs on the orchestrator
+/// task so the non-`Sync` rusqlite connection never crosses an await boundary.
+fn persist_prepared(db: &Connection, prepared: PreparedFile) -> FileOutcome {
+    let (mut movie, matched) = match prepared {
+        PreparedFile::Matched { movie } => (movie, true),
+        PreparedFile::Unmatched { movie } => (movie, false),
+        PreparedFile::Failed(reason) => return FileOutcome::Failed(reason),
+    };
+
+    // Content-hash dedup covers moved/renamed copies.
+    if let Some(ref hash) = movie.file_hash {
+        if movies::movie_exists_by_file_hash(db, hash).unwrap_or(false) {
+            return FileOutcome::Skipped;
+        }
+    }
+
+    match movies::insert_movie(db, &movie) {
+        Ok(id) => {
+            movie.id = id;
+            FileOutcome::Imported(Box::new(movie), matched)
+        }
+        Err(err) => FileOutcome::Failed(err.to_string()),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct LibraryStats {
     pub total_movies: i64,
@@ -135,11 +299,12 @@ pub struct LibraryStats {
 
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
     use tempfile::TempDir;
 
     use crate::db::{connection, models::Movie};
 
-    use super::LibraryManager;
+    use super::{LibraryManager, is_non_feature_path};
 
     fn setup_db() -> (rusqlite::Connection, TempDir) {
         let dir = TempDir::new().expect("Failed to create temp dir");
@@ -211,6 +376,41 @@ mod tests {
         assert!(files.contains(&nested_video));
         assert!(!files.contains(&deep_video));
         assert!(!files.contains(&non_video));
+    }
+
+    #[test]
+    fn scan_folder_skips_samples_extras_and_hidden_dirs() {
+        let temp = TempDir::new().expect("temp dir");
+        let root = temp.path();
+
+        let real = root.join("Dune.2021.mkv");
+        let sample = root.join("Sample").join("sample-dune.mkv");
+        let trailer = root.join("Trailers").join("dune-trailer.mp4");
+        let extras = root.join("Extras").join("behindthescenes.mkv");
+        let hidden = root.join(".@__thumb").join("abc.mp4");
+        std::fs::create_dir_all(sample.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(trailer.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(extras.parent().unwrap()).unwrap();
+        std::fs::create_dir_all(hidden.parent().unwrap()).unwrap();
+        for f in [&real, &sample, &trailer, &extras, &hidden] {
+            std::fs::write(f, b"video").unwrap();
+        }
+
+        let files = LibraryManager::scan_folder(root);
+        assert_eq!(files, vec![real.clone()]);
+        assert!(!files.contains(&sample));
+        assert!(!files.contains(&trailer));
+        assert!(!files.contains(&extras));
+        assert!(!files.contains(&hidden));
+    }
+
+    #[test]
+    fn non_feature_detection_covers_common_layouts() {
+        let root = Path::new("/library");
+        assert!(is_non_feature_path(Path::new("/library/Sample/clip.mkv"), root));
+        assert!(is_non_feature_path(Path::new("/library/Movie/extras/featurette.mkv"), root));
+        assert!(is_non_feature_path(Path::new("/library/.trash/x.mp4"), root));
+        assert!(!is_non_feature_path(Path::new("/library/Movie (2021)/movie.mkv"), root));
     }
 
     #[test]

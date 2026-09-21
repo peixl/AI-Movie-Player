@@ -37,6 +37,9 @@ pub enum AppError {
     #[error("Invalid configuration / 配置无效: {0}")]
     Config(String),
 
+    #[error("Request timed out / 请求超时: {0}")]
+    Timeout(String),
+
     #[error("Image processing error / 图像处理错误: {0}")]
     Image(#[from] image::ImageError),
 }

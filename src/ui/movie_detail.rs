@@ -1,6 +1,7 @@
-//! Movie detail panel with cached poster textures.
+//! Movie detail panel. Posters load asynchronously through egui_extras' image
+//! loader, so opening a detail view never blocks the UI on image decoding.
 
-use egui::{Color32, RichText, TextureHandle, Ui, Vec2};
+use egui::{Color32, RichText, Ui, Vec2};
 use rusqlite::Connection;
 
 use crate::db::{
@@ -14,18 +15,18 @@ use crate::ui::Rounding;
 pub enum DetailAction {
     None,
     OpenFile,
+    RevealInFolder,
+    RelocateFile,
     SearchSubtitles,
     AiAnalyze,
 }
 
-/// Stateful movie detail panel with poster texture caching.
-pub struct MovieDetailPanel {
-    cached_poster: Option<(i64, TextureHandle)>,
-}
+/// Stateless movie detail panel (poster textures are owned by the egui loader).
+pub struct MovieDetailPanel;
 
 impl MovieDetailPanel {
     pub fn new() -> Self {
-        Self { cached_poster: None }
+        Self
     }
 
     /// Show movie detail. Returns the action the user wants to take.
@@ -40,22 +41,22 @@ impl MovieDetailPanel {
         let text = crate::ui::theme::text_color(is_dark);
         let dim = crate::ui::theme::dim_color(is_dark);
         let primary = crate::ui::theme::primary_color();
+        let bad = Color32::from_rgb(248, 113, 113);
+
+        let local_path = movie.local_file_path.as_deref().filter(|path| !path.trim().is_empty());
+        let file_exists = local_path.is_some_and(|p| std::path::Path::new(p).exists());
 
         egui::ScrollArea::vertical().show(ui, |ui| {
             // Title + primary actions
             ui.horizontal(|ui| {
                 ui.heading(RichText::new(&movie.title).size(22.0).color(text));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let has_local_file = movie
-                        .local_file_path
-                        .as_deref()
-                        .is_some_and(|path| !path.trim().is_empty());
                     let open_btn = egui::Button::new(
                         RichText::new("Open / 播放").size(13.0).color(Color32::WHITE),
                     )
                     .fill(primary)
                     .corner_radius(Rounding::same(6.0));
-                    if ui.add_enabled(has_local_file, open_btn).clicked() {
+                    if ui.add_enabled(file_exists, open_btn).clicked() {
                         action = DetailAction::OpenFile;
                     }
 
@@ -73,42 +74,28 @@ impl MovieDetailPanel {
                 ui.label(RichText::new(cn).size(16.0).color(dim));
             }
 
+            if !file_exists {
+                ui.add_space(6.0);
+                ui.label(
+                    RichText::new("⚠ 本地文件丢失或已移动 / Local file is missing or was moved")
+                        .size(13.0)
+                        .color(bad),
+                );
+            }
+
             ui.add_space(12.0);
 
             // Poster + basic info
             ui.horizontal(|ui| {
-                // Poster (cached — only decodes from disk once per movie)
+                // Poster loads off the UI thread via the egui_extras image loader.
                 if let Some(ref poster_path) = movie.poster_local {
-                    let needs_load =
-                        self.cached_poster.as_ref().is_none_or(|(id, _)| *id != movie.id);
-                    if needs_load {
-                        if let Ok(img) = image::open(poster_path) {
-                            let size = [img.width() as _, img.height() as _];
-                            let rgba = img.to_rgba8();
-                            let color_img =
-                                egui::ColorImage::from_rgba_unmultiplied(size, &rgba.into_raw());
-                            let texture = ui.ctx().load_texture(
-                                format!("detail_poster_{}", movie.id),
-                                color_img,
-                                egui::TextureOptions::LINEAR,
-                            );
-                            self.cached_poster = Some((movie.id, texture));
-                        }
-                    }
-                    if let Some((_, ref texture)) = self.cached_poster {
-                        let max_size = Vec2::new(200.0, 300.0);
-                        let tex_size = texture.size();
-                        let aspect = tex_size[0] as f32 / tex_size[1] as f32;
-                        let display_size = if aspect > 2.0 / 3.0 {
-                            Vec2::new(max_size.x, max_size.x / aspect)
-                        } else {
-                            Vec2::new(max_size.y * aspect, max_size.y)
-                        };
-                        ui.image(egui::ImageSource::Texture(egui::load::SizedTexture::new(
-                            texture.id(),
-                            display_size,
-                        )));
-                    }
+                    let uri = format!("file://{}", poster_path);
+                    ui.add(
+                        egui::Image::new(uri)
+                            .fit_to_fraction(Vec2::new(1.0, 1.0))
+                            .max_size(Vec2::new(200.0, 300.0))
+                            .corner_radius(Rounding::same(6.0)),
+                    );
                 }
 
                 // Info
@@ -134,7 +121,7 @@ impl MovieDetailPanel {
 
                     if let Some(ref genres) = movie.genres {
                         if let Ok(genre_list) = serde_json::from_str::<Vec<String>>(genres) {
-                            ui.horizontal(|ui| {
+                            ui.horizontal_wrapped(|ui| {
                                 for g in &genre_list {
                                     super::widgets::badge(ui, g, primary);
                                     ui.add_space(4.0);
@@ -175,9 +162,29 @@ impl MovieDetailPanel {
                     if let Some(ref file) = movie.local_file_path {
                         ui.add_space(4.0);
                         ui.label(
-                            RichText::new(format!("File / 文件: {}", file)).size(11.0).color(dim),
+                            RichText::new(format!("File / 文件: {file}")).size(11.0).color(dim),
                         );
                     }
+
+                    ui.add_space(8.0);
+                    ui.horizontal(|ui| {
+                        if file_exists
+                            && ui
+                                .button(
+                                    RichText::new("📁 在文件夹中显示 / Show in Folder").size(12.0),
+                                )
+                                .clicked()
+                        {
+                            action = DetailAction::RevealInFolder;
+                        }
+                        if !file_exists
+                            && ui
+                                .button(RichText::new("🔎 重新定位文件 / Locate file…").size(12.0))
+                                .clicked()
+                        {
+                            action = DetailAction::RelocateFile;
+                        }
+                    });
                 });
             });
 
@@ -272,7 +279,7 @@ impl MovieDetailPanel {
                                 ui.label(format);
                             }
                             if let Some(rating) = sub.rating {
-                                ui.label(format!("★{:.1}", rating));
+                                ui.label(format!("★{rating:.1}"));
                             }
                         });
                     }

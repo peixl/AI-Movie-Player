@@ -27,7 +27,7 @@ AI Movie Player is currently a beta-quality local library app, not a fully embed
 | Layer | Technology |
 | --- | --- |
 | Language | Rust (edition 2024, MSRV 1.85) |
-| GUI Framework | [egui](https://github.com/emilk/egui) / eframe 0.31 |
+| GUI Framework | [egui](https://github.com/emilk/egui) / eframe 0.32 |
 | Async Runtime | [Tokio](https://tokio.rs) |
 | Database | [SQLite](https://sqlite.org) via rusqlite (WAL mode, FTS5) |
 | HTTP Client | [reqwest](https://github.com/seanmonstar/reqwest) (gzip, brotli, stream) |
@@ -149,12 +149,12 @@ Good AI output should say when facts are missing, avoid invented trivia, and exp
 
 | Area | What it does |
 | --- | --- |
-| Library | Scan folders, detect movie files, avoid duplicate imports, and organize a personal collection. |
-| Playback Launch | Open a stored local movie file with the operating system's default player from the detail page. |
-| Metadata | Enrich local media with TMDB titles, posters, cast, ratings, and synopsis. |
-| AI | Provide movie chat, quick insight, taste profiling, and recommendation workflows. |
-| Subtitles | Search and download subtitles from multiple sources for local playback. |
-| Poster Wall | Browse visually with cached posters and a cleaner discovery flow. |
+| Library | Recursive folder scans that skip samples/trailers/extras, bounded-concurrency import, path plus content-hash deduplication, fuzzy TMDB matching with confidence thresholds, and honest fallback records for unmatched files. |
+| Playback Launch | Open a stored local movie file with the operating system's default player (fully detached, so the UI never blocks), reveal the file in its folder, or relocate it when the file has moved. |
+| Metadata | Enrich local media with TMDB titles, posters, cast, ratings, and synopsis via resilient HTTP clients with timeouts, retries, and concurrent bilingual detail fetching. |
+| AI | Provide movie chat, quick insight, taste profiling, and recommendation workflows; streaming uses an idle-gap timeout so long answers are never cut off. |
+| Subtitles | Search and download subtitles from the official OpenSubtitles API, ranked by language preference and quality signals, with safe archive extraction, encoding normalization, and same-basename installation next to the movie. |
+| Poster Wall | Browse visually with posters decoded off the UI thread, LRU texture caching, and a cleaner discovery flow. |
 | Watchlist | Keep track of what you want to watch next. |
 
 ## Compared with a Typical Player
@@ -166,7 +166,10 @@ Good AI output should say when facts are missing, avoid invented trivia, and exp
 | AI conversation about a selected film | Rare | Native workflow |
 | Library-aware recommendations | Rare | Built in |
 | Guided viewing workflows | No | Pre-watch, post-watch, and double-feature flows |
-| Subtitle workflow | Basic | Search and download oriented |
+| Subtitle workflow | Basic | Ranked OpenSubtitles search, zip-slip-safe extraction, GBK/BOM handling, auto-load naming |
+| Import robustness | Manual or first-result guessing | Fuzzy scored matching, content-hash dedup, sample/trailer filtering, honest unmatched records |
+| Network behavior | Single best-effort client | Per-profile timeouts, retries with backoff, separate API/image rate limits, streaming idle timeout |
+| Missing files | Silent failures | Visible warning, one-click relocate, reveal-in-folder |
 | Product tone | Utility-first | Cinema-first, quietly premium |
 
 ## Visual Preview
@@ -192,6 +195,7 @@ If the Releases page does not yet show downloadable assets, build from source wi
 
 - Rust 1.85+
 - A TMDB API key from [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api)
+- Optional: a free OpenSubtitles API key from [opensubtitles.com/api/keys](https://www.opensubtitles.com/api/keys) for subtitle downloads
 - Optional: any OpenAI-compatible API key
 
 ### Clone and Run
@@ -214,7 +218,7 @@ Use a tiny test library before scanning a real collection:
 6. Ask AI Companion for a spoiler-light pre-watch briefing.
 7. Try Double Feature Pairing to see how the app turns one selected movie into a viewing path.
 
-Without AI keys, the local library, metadata, poster, watchlist, subtitle, and system-player launch workflows remain usable.
+Without AI keys, the local library, metadata, poster, watchlist, and system-player launch workflows remain usable; subtitle downloads independently need a free OpenSubtitles API key.
 
 ## AI Setup
 
@@ -230,6 +234,15 @@ OpenAI    -> https://api.openai.com/v1
 Ollama    -> http://localhost:11434/v1
 LM Studio -> http://localhost:1234/v1
 ```
+
+## Subtitle Setup
+
+1. Register a free account at [opensubtitles.com](https://www.opensubtitles.com) and create an API key at [opensubtitles.com/api/keys](https://www.opensubtitles.com/api/keys).
+2. Open Settings → Subtitles and paste the API key.
+3. From a movie's Subtitle view, pick a result by language, rating, and HD badge.
+4. Downloads are installed next to the movie as `{movie}.{language}.{ext}` so IINA, VLC, MPC-HC, and similar players auto-load them; if the movie file is missing, the subtitle lands in a temporary folder instead.
+
+No third-party API key is bundled with the application.
 
 ## Keyboard Shortcuts
 
@@ -255,14 +268,17 @@ ai-movie-player/
 │   ├── app.rs                   # Central application struct (eframe::App)
 │   ├── ai/                      # AI prompt builders and workflow logic
 │   ├── api/
+│   │   ├── http.rs              # Shared timeouts, retries, backoff, user agent
 │   │   ├── ai.rs                # OpenAI-compatible streaming client
 │   │   └── tmdb.rs              # TMDB API v3 client
 │   ├── core/
 │   │   ├── filename_parser.rs   # Extract metadata from filenames
+│   │   ├── matcher.rs           # Fuzzy scored TMDB result matching
+│   │   ├── playback.rs          # Detached system player / file manager launch
 │   │   ├── file_organizer.rs    # File organization and renaming
-│   │   ├── library_manager.rs   # Library scanning and import
+│   │   ├── library_manager.rs   # Concurrent library scanning and import
 │   │   ├── metadata_service.rs  # TMDB metadata enrichment
-│   │   └── subtitle_finder.rs   # Subtitle search coordination
+│   │   └── subtitle_finder.rs   # OpenSubtitles search, download, extraction
 │   ├── db/
 │   │   ├── connection.rs        # Database bootstrap and connection options
 │   │   ├── migrations.rs        # Schema migrations
@@ -388,8 +404,8 @@ If your environment has intermittent Cargo registry access, the scripts director
 - Move API keys from plaintext SQLite storage to system credential storage where available.
 - Explore embedded playback controls while keeping system-player launch available as the reliable fallback.
 - Deepen the AI viewing workflows so they feel like part of watching, not just chat after the fact.
-- Improve subtitle quality ranking and source reliability.
-- Expand poster-wall scale, speed, and polish for larger personal libraries.
+- Add more subtitle sources alongside the OpenSubtitles API and richer format handling.
+- Further poster-wall virtualization for libraries with tens of thousands of titles.
 - Add better onboarding for local AI providers and self-hosted endpoints.
 
 ## FAQ
@@ -404,7 +420,11 @@ Not yet. The app currently launches your stored local movie file in the system d
 
 ### Do I need an AI API key to use the app?
 
-No. Core library, poster, metadata, and subtitle workflows can still exist without AI. AI features require an OpenAI-compatible provider.
+No. Core library, poster, and metadata workflows work without AI. AI features require an OpenAI-compatible provider. Subtitle downloads independently require a free OpenSubtitles API key (see Subtitle Setup).
+
+### What happens when a movie file is missing or moved?
+
+The detail page shows a clear warning and disables playback. Use "Relocate file" to point at the new location (metadata and subtitles are kept), or "Reveal in folder" to inspect where the file is expected.
 
 ### Which AI provider is best?
 

@@ -1,4 +1,8 @@
 //! Poster thumbnail download and disk caching.
+//!
+//! Image decoding/resizing runs on the blocking pool so a slow network volume
+//! can never stall the UI thread. Files are written atomically via a temp
+//! sibling path.
 
 use std::path::{Path, PathBuf};
 
@@ -32,10 +36,22 @@ pub async fn download_and_cache(
 
     let poster_bytes = client.download_poster(poster_path, "w342").await?;
 
-    // Resize to thumbnail
-    let img = image::load_from_memory(&poster_bytes)?;
-    let thumb = img.thumbnail(THUMBNAIL_WIDTH, u32::MAX);
-    thumb.save(&thumb_path)?;
+    let thumb_path_blocking = thumb_path.clone();
+    tokio::task::spawn_blocking(move || -> Result<()> {
+        let img = image::load_from_memory(&poster_bytes)?;
+        let thumb = img.thumbnail(THUMBNAIL_WIDTH, u32::MAX);
+
+        // Write to a temp sibling then rename so a partial download can never
+        // leave a corrupt thumbnail that other code trusts on disk.
+        let tmp_path = thumb_path_blocking.with_extension("jpg.tmp");
+        thumb.save(&tmp_path)?;
+        std::fs::rename(&tmp_path, &thumb_path_blocking)?;
+        Ok(())
+    })
+    .await
+    .map_err(|err| {
+        crate::util::error::AppError::Parse(format!("thumbnail task failed: {err}"))
+    })??;
 
     Ok(thumb_path.to_string_lossy().to_string())
 }

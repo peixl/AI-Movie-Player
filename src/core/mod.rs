@@ -9,5 +9,7 @@
 pub mod file_organizer;
 pub mod filename_parser;
 pub mod library_manager;
+pub mod matcher;
 pub mod metadata_service;
+pub mod playback;
 pub mod subtitle_finder;

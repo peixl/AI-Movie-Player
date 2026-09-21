@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::api::tmdb::TmdbClient;
 use crate::core::filename_parser::{self, is_video_file};
+use crate::core::matcher;
 use crate::db::models::*;
 use crate::db::movies;
 use crate::util::error::Result;
@@ -27,29 +28,8 @@ fn bytes_to_lower_hex(bytes: impl AsRef<[u8]>) -> String {
 /// Orchestrates metadata enrichment: directory scanning, TMDB lookup, and DB storage.
 pub struct MetadataService;
 
-fn select_best_match<'a>(
-    parsed: &ParsedFilename,
-    results: &'a [TmdbSearchResult],
-) -> Option<&'a TmdbSearchResult> {
-    if results.is_empty() {
-        return None;
-    }
-
-    if results.len() == 1 {
-        return results.first();
-    }
-
-    results
-        .iter()
-        .find(|result| {
-            result.title.to_lowercase() == parsed.title.to_lowercase()
-                && parsed.year.is_none_or(|year| result.year == Some(year))
-        })
-        .or_else(|| results.first())
-}
-
 impl MetadataService {
-    pub fn scan_directory(dir: &std::path::Path) -> Vec<PathBuf> {
+    pub fn scan_directory(dir: &Path) -> Vec<PathBuf> {
         let mut files = Vec::new();
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.flatten() {
@@ -68,7 +48,9 @@ impl MetadataService {
         files
     }
 
-    pub fn compute_file_hash(path: &std::path::Path, sample_size: u64) -> std::io::Result<String> {
+    /// Hash the head (and tail for large files) to fingerprint a video cheaply
+    /// without reading gigabytes of data.
+    pub fn compute_file_hash(path: &Path, sample_size: u64) -> std::io::Result<String> {
         let mut file = std::fs::File::open(path)?;
         let file_size = file.metadata()?.len();
         let read_size = std::cmp::min(sample_size, file_size);
@@ -79,13 +61,10 @@ impl MetadataService {
         hasher.update(&buffer);
 
         if file_size > sample_size * 2 {
-            // Also read tail
+            // Also read tail, from a separately positioned reader.
             let tail_start = file_size - sample_size;
             let mut file = std::fs::File::open(path)?;
-            std::io::Seek::seek(
-                &mut std::io::BufReader::new(&mut file),
-                std::io::SeekFrom::Start(tail_start),
-            )?;
+            std::io::Seek::seek(&mut file, std::io::SeekFrom::Start(tail_start))?;
             let mut tail_buf = vec![0u8; sample_size as usize];
             file.read_exact(&mut tail_buf)?;
             hasher.update(&tail_buf);
@@ -94,9 +73,10 @@ impl MetadataService {
         Ok(bytes_to_lower_hex(hasher.finalize()))
     }
 
+    /// Search TMDB and return the best confident match plus full details.
     pub async fn search_and_match(
         client: &TmdbClient,
-        file_path: &std::path::Path,
+        file_path: &Path,
     ) -> Result<(TmdbSearchResult, TmdbMovieDetails)> {
         let filename =
             file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
@@ -105,13 +85,7 @@ impl MetadataService {
 
         let results = client.search_movies(&parsed.title, parsed.year).await?;
 
-        if results.is_empty() {
-            return Err(crate::util::error::AppError::MovieNotFound {
-                query: parsed.title.clone(),
-            });
-        }
-
-        let best = select_best_match(&parsed, &results).ok_or_else(|| {
+        let best = matcher::select_best_match(&parsed, &results).ok_or_else(|| {
             crate::util::error::AppError::MovieNotFound { query: parsed.title.clone() }
         })?;
 
@@ -120,11 +94,59 @@ impl MetadataService {
         Ok((best.clone(), details))
     }
 
-    pub async fn import_movie(
+    /// Build a minimal, honest record for a file TMDB could not confidently
+    /// match. Importing it keeps the library complete; users can match it later.
+    pub fn build_unmatched_movie(file_path: &Path) -> std::io::Result<Movie> {
+        let filename =
+            file_path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        let parsed = filename_parser::parse_filename(&filename);
+        let metadata = std::fs::metadata(file_path)?;
+        let file_size = metadata.len() as i64;
+        let file_hash = Self::compute_file_hash(file_path, 64 * 1024).ok();
+
+        Ok(Movie {
+            id: 0,
+            tmdb_id: None,
+            imdb_id: None,
+            title: if parsed.title.trim().is_empty() { filename } else { parsed.title },
+            title_cn: None,
+            original_title: None,
+            year: parsed.year,
+            release_date: None,
+            poster_path: None,
+            poster_local: None,
+            backdrop_path: None,
+            backdrop_local: None,
+            rating: None,
+            rating_count: None,
+            genres: None,
+            runtime: None,
+            overview: None,
+            overview_cn: None,
+            tagline: None,
+            director: None,
+            cast_list: None,
+            language: None,
+            country: None,
+            local_file_path: Some(file_path.to_string_lossy().to_string()),
+            file_size: Some(file_size),
+            file_hash,
+            resolution: parsed.resolution,
+            source: parsed.source,
+            codec: parsed.codec,
+            audio_langs: None,
+            added_date: String::new(),
+            updated_date: String::new(),
+            tmdb_data: None,
+        })
+    }
+
+    /// Build the fully enriched record (including poster download) without
+    /// touching the database, so it can run on concurrent worker tasks.
+    pub async fn prepare_matched_movie(
         client: &TmdbClient,
-        file_path: &std::path::Path,
+        file_path: &Path,
         details: &TmdbMovieDetails,
-        db: &Connection,
         thumbnail_dir: &Path,
     ) -> Result<Movie> {
         let filename =
@@ -135,7 +157,7 @@ impl MetadataService {
 
         let genres_json = serde_json::to_string(&details.genres).ok();
         let cast_json = serde_json::to_string(&details.cast_list).ok();
-        let tmdb_json = serde_json::to_string(&details).ok();
+        let tmdb_json = serde_json::to_string(details).ok();
 
         let poster_local = if let Some(ref poster_path) = details.poster_path {
             crate::thumbnail::cache::download_and_cache(
@@ -150,7 +172,7 @@ impl MetadataService {
             None
         };
 
-        let movie = Movie {
+        Ok(Movie {
             id: 0,
             tmdb_id: Some(details.tmdb_id),
             imdb_id: details.imdb_id.clone(),
@@ -184,12 +206,27 @@ impl MetadataService {
             added_date: String::new(),
             updated_date: String::new(),
             tmdb_data: tmdb_json,
-        };
+        })
+    }
 
+    /// Enrich, download the poster, and persist a matched movie.
+    pub async fn import_movie(
+        client: &TmdbClient,
+        file_path: &Path,
+        details: &TmdbMovieDetails,
+        db: &Connection,
+        thumbnail_dir: &Path,
+    ) -> Result<Movie> {
+        let movie = Self::prepare_matched_movie(client, file_path, details, thumbnail_dir).await?;
         let id = movies::insert_movie(db, &movie)?;
-
         Ok(Movie { id, ..movie })
     }
+}
+
+/// Convenience used by tests and callers that need a folder listing without
+/// walking recursively.
+pub fn list_top_level_videos(dir: &Path) -> Vec<PathBuf> {
+    MetadataService::scan_directory(dir)
 }
 
 #[cfg(test)]
@@ -199,60 +236,7 @@ mod tests {
     use sha2::{Digest, Sha256};
     use tempfile::TempDir;
 
-    use super::{MetadataService, bytes_to_lower_hex, select_best_match};
-    use crate::db::models::{ParsedFilename, TmdbSearchResult};
-
-    fn parsed_filename(title: &str, year: Option<i32>) -> ParsedFilename {
-        ParsedFilename {
-            title: title.to_string(),
-            year,
-            resolution: None,
-            source: None,
-            codec: None,
-            group: None,
-            episode: None,
-            is_tv: false,
-        }
-    }
-
-    fn tmdb_result(id: i64, title: &str, year: Option<i32>) -> TmdbSearchResult {
-        TmdbSearchResult {
-            tmdb_id: id,
-            title: title.to_string(),
-            title_cn: None,
-            year,
-            poster_path: None,
-            overview: None,
-            rating: None,
-        }
-    }
-
-    #[test]
-    fn select_best_match_prefers_exact_title_and_year() {
-        let parsed = parsed_filename("Dune", Some(2021));
-        let results = vec![
-            tmdb_result(1, "Dune", Some(1984)),
-            tmdb_result(2, "Dune", Some(2021)),
-            tmdb_result(3, "Dune Part Two", Some(2024)),
-        ];
-
-        let best = select_best_match(&parsed, &results).expect("expected best match");
-
-        assert_eq!(best.tmdb_id, 2);
-    }
-
-    #[test]
-    fn select_best_match_falls_back_to_first_when_no_exact_match() {
-        let parsed = parsed_filename("Unknown Film", Some(2023));
-        let results = vec![
-            tmdb_result(10, "Possible Match", Some(2023)),
-            tmdb_result(11, "Another Match", Some(2023)),
-        ];
-
-        let best = select_best_match(&parsed, &results).expect("expected fallback match");
-
-        assert_eq!(best.tmdb_id, 10);
-    }
+    use super::{MetadataService, bytes_to_lower_hex};
 
     #[test]
     fn scan_directory_only_returns_top_level_video_files() {
@@ -306,5 +290,21 @@ mod tests {
         let expected = bytes_to_lower_hex(hasher.finalize());
 
         assert_eq!(hash, expected);
+    }
+
+    #[test]
+    fn unmatched_movie_preserves_file_facts_without_tmdb() {
+        let temp = TempDir::new().expect("temp dir");
+        let path = temp.path().join("Dune.2021.1080p.BluRay.x265.mkv");
+        std::fs::write(&path, b"movie-bytes").expect("write movie");
+
+        let movie = MetadataService::build_unmatched_movie(&path).expect("fallback record");
+        assert_eq!(movie.tmdb_id, None);
+        assert_eq!(movie.year, Some(2021));
+        assert_eq!(movie.resolution.as_deref(), Some("1080p"));
+        assert_eq!(movie.title, "Dune");
+        assert!(movie.local_file_path.is_some());
+        assert_eq!(movie.file_size, Some(11));
+        assert!(movie.file_hash.is_some());
     }
 }

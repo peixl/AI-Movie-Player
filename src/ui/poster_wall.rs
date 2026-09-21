@@ -2,11 +2,23 @@
 
 use egui::{Color32, Context, RichText, Sense, TextureHandle, Ui, Vec2};
 use rusqlite::Connection;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::{Arc, Mutex};
 
 use crate::db::models::MovieSummary;
 use crate::db::movies;
 use crate::ui::Rounding;
+
+/// Decoded RGBA pixels produced by a background decoder thread.
+#[derive(Clone)]
+struct DecodedImage {
+    width: usize,
+    height: usize,
+    rgba: Vec<u8>,
+}
+
+/// Maximum on-disk decode width; posters never need more for the grid.
+const DECODE_MAX_WIDTH: u32 = 400;
 
 const POSTER_WIDTH: f32 = 160.0;
 const POSTER_HEIGHT: f32 = 240.0;
@@ -55,6 +67,12 @@ pub struct PosterWall {
     texture_cache: HashMap<i64, TextureHandle>,
     texture_lru: VecDeque<i64>,
     filter_dirty: bool,
+    /// Finished background decodes awaiting upload to GPU textures.
+    decoded: Arc<Mutex<HashMap<i64, DecodedImage>>>,
+    /// Ids with a decoder thread already running (or finished, failed or not).
+    decode_inflight: HashSet<i64>,
+    /// One-shot Ctrl+F request to focus the search box.
+    pub focus_search_requested: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -74,6 +92,9 @@ impl PosterWall {
             texture_cache: HashMap::new(),
             texture_lru: VecDeque::new(),
             filter_dirty: true,
+            decoded: Arc::new(Mutex::new(HashMap::new())),
+            decode_inflight: HashSet::new(),
+            focus_search_requested: false,
         }
     }
 
@@ -251,15 +272,17 @@ impl PosterWall {
                 );
                 ui.painter().add(mesh);
             } else {
-                // Show shimmer while loading texture from disk
+                // Show shimmer while the background decoder works.
                 ui.painter().rect_filled(poster_img_rect, rounding, colors.skeleton);
 
-                // Load texture
-                if let Ok(img) = image::open(local_path) {
-                    let size = [img.width() as usize, img.height() as usize];
-                    let rgba = img.to_rgba8();
-                    let pixels = rgba.into_raw();
-                    let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &pixels);
+                // A decoder thread finished: upload pixels to a GPU texture on
+                // the UI thread (the only legal place to touch egui textures).
+                let finished = self.decoded.lock().expect("decoded mutex").remove(&movie.id);
+                if let Some(decoded) = finished {
+                    let color_image = egui::ColorImage::from_rgba_unmultiplied(
+                        [decoded.width, decoded.height],
+                        &decoded.rgba,
+                    );
                     let texture = ctx.load_texture(
                         format!("poster_{}", movie.id),
                         color_image,
@@ -277,7 +300,7 @@ impl PosterWall {
                     );
                     ui.painter().add(mesh);
                 } else {
-                    ui.painter().rect_filled(poster_img_rect, rounding, colors.background);
+                    self.request_decode(movie.id, local_path);
                 }
             }
         } else {
@@ -342,13 +365,43 @@ impl PosterWall {
         }
     }
 
+    /// Spawn (once per id) a background thread that decodes and downscales the
+    /// poster off the UI thread. Results are collected through `decoded`.
+    fn request_decode(&mut self, id: i64, path: &str) {
+        if self.decode_inflight.contains(&id) {
+            return;
+        }
+        self.decode_inflight.insert(id);
+
+        let decoded = self.decoded.clone();
+        let path = path.to_string();
+        std::thread::spawn(move || {
+            if let Ok(img) = image::open(&path) {
+                let thumb = img.thumbnail(DECODE_MAX_WIDTH, u32::MAX).to_rgba8();
+                let (width, height) = thumb.dimensions();
+                let image = DecodedImage {
+                    width: width as usize,
+                    height: height as usize,
+                    rgba: thumb.into_raw(),
+                };
+                decoded.lock().expect("decoded mutex").insert(id, image);
+            }
+        });
+    }
+
     fn show_filter_bar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             // Search
+            let search_id = ui.make_persistent_id("poster_search_box");
+            if self.focus_search_requested {
+                self.focus_search_requested = false;
+                ui.ctx().memory_mut(|memory| memory.request_focus(search_id));
+            }
             let mut search = self.filter.search.clone().unwrap_or_default();
             let search_response = ui.add(
                 egui::TextEdit::singleline(&mut search)
-                    .hint_text("Search / 搜索...")
+                    .id(search_id)
+                    .hint_text("Search / 搜索 (Ctrl+F)...")
                     .desired_width(200.0),
             );
             if search_response.changed() {

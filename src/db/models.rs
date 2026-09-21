@@ -105,6 +105,8 @@ pub struct TmdbSearchResult {
     pub poster_path: Option<String>,
     pub overview: Option<String>,
     pub rating: Option<f64>,
+    #[serde(default)]
+    pub popularity: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -165,4 +167,8 @@ pub struct SubtitleResult {
     pub is_ai: bool,
     pub is_hearing_imp: bool,
     pub format: String,
+    /// Provider-side file identifier used to resolve a download link.
+    pub file_id: Option<i64>,
+    /// Whether the result is HD (hearing-friendly timing/source quality).
+    pub is_hd: bool,
 }
